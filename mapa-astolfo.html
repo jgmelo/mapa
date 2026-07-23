@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EFF3F2">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161B1B">
+<title>Mapa Astral de Astolfo</title>
+<style>
+:root{
+  /* Cool mineral theme: silver ground, blue/teal/green accents, matching
+     the wheel's slate-teal night ground. */
+  --bg:#EFF3F2;--surface:#FBFDFC;--ink:#1B2423;--muted:#5A6B69;--faint:#8AA09D;
+  --border:#D5DFDD;--border-strong:#AEC1BE;
+  --body-bg:#E2E9F8;--body-ink:#33508F;
+  --aspect-bg:#DDF0EA;--aspect-ink:#0C6A59;
+  --house-bg:#E4F1DC;--house-ink:#3F6B28;
+  --general-bg:#E9EEED;--general-ink:#4C5857;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161B1B;--surface:#1F2525;--ink:#E8EEEC;--muted:#9FAFAD;--faint:#71807E;
+    --border:#333C3B;--border-strong:#4E5B59;
+    /* The wheel goes very dark in night mode (its built-in palette is the
+       lighter slate-teal used in light mode). */
+    --wheel-bg:#121717;--wheel-line:#3D4846;
+    --wheel-fire:#2E2422;--wheel-earth:#242B20;--wheel-air:#202737;--wheel-water:#1A302D;
+  }
+}
+*{box-sizing:border-box;margin:0}
+body{
+  background:var(--bg);color:var(--ink);padding:30px 20px 60px;
+  font:15px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+main{max-width:1460px;margin:0 auto}
+header h1{font-size:1.55rem;font-weight:650}
+header .birth{color:var(--muted);margin-top:4px;font-size:.92rem}
+.layout{
+  display:grid;grid-template-columns:minmax(330px,440px) 1fr;
+  gap:24px;margin-top:22px;align-items:flex-start;
+}
+.wheel{
+  background:var(--wheel-bg,#26302F);border:1px solid var(--border);
+  border-radius:14px;padding:6px;position:sticky;top:20px;
+}
+.wheel svg{width:100%;height:auto;display:block}
+.wheel .wheelbar{display:none}
+.reading{min-width:0}
+.hint{color:var(--faint);font-size:.8rem;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:14px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tile{
+  aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px;text-align:left;font:inherit;color:inherit;cursor:pointer;
+  display:flex;flex-direction:column;overflow:hidden;animation:rise .4s both;
+  transition:transform .08s;
+}
+.tile:hover{border-color:var(--border-strong);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.tile:active{transform:scale(.96)}
+.detail h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.tile h3{
+  margin-top:auto;font-size:19px;font-weight:650;line-height:1.25;
+  overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;
+}
+.tile .face{display:none}
+.wheel-tile{display:none}
+.ics{display:flex;gap:6px;flex:none;flex-wrap:wrap}
+.ic{
+  width:26px;height:26px;border-radius:8px;flex:none;font-size:15px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.ic.theme{background:var(--general-bg)}
+.ic.body{background:var(--body-bg);color:var(--body-ink)}
+.ic.aspect{background:var(--aspect-bg);color:var(--aspect-ink);font-size:12px;letter-spacing:1px}
+.ic.house{background:var(--house-bg);color:var(--house-ink)}
+.ic.general{background:var(--general-bg);color:var(--general-ink)}
+.detail{
+  display:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px 18px;
+}
+.detail.open{display:block;animation:rise .25s both}
+.detail .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.btn{
+  font:inherit;font-size:.8rem;padding:3px 12px;cursor:pointer;flex:none;
+  background:var(--bg);border:1px solid var(--border);border-radius:999px;color:var(--muted);
+}
+.btn:hover{border-color:var(--border-strong);color:var(--ink)}
+.detail .top .btn{margin-left:auto}
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:2px 9px;
+  margin:2px 4px 2px 0;color:var(--muted);
+}
+.detail .body{margin-top:10px}
+.detail .body p{margin:0 0 10px}
+.sep{
+  display:flex;align-items:center;gap:14px;margin:16px 0;
+  color:var(--faint);font-size:15px;letter-spacing:4px;
+}
+.sep::before,.sep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+table.data td{padding:5px 8px;border-top:1px solid var(--border);vertical-align:top}
+table.data td:first-child{color:var(--muted);white-space:nowrap;width:34%}
+footer{margin-top:32px;color:var(--faint);font-size:.78rem;text-align:center}
+@media (max-width:940px){
+  body{padding:18px 12px 44px}
+  header h1{font-size:1.15rem}
+  header .birth{font-size:.8rem}
+  .layout{grid-template-columns:1fr;gap:14px;margin-top:14px}
+  .wheel{display:none;position:static}
+  body.wheel-open .wheel{display:block}
+  body.wheel-open .hint{display:none}
+  .wheel .wheelbar{display:flex;align-items:center;gap:10px;padding:4px 8px 10px}
+  .wheel .wheelbar h3{font-size:15px;color:#EFF4F1}
+  .wheel .wheelbar .btn{
+    margin-left:auto;background:transparent;color:#CFDAD6;border-color:#4F5C5A;
+  }
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+  .tile{padding:10px;border-radius:12px}
+  .tile h3,.tile .ics{display:none}
+  .tile .face{
+    display:flex;flex:1;flex-direction:column;align-items:center;
+    justify-content:center;gap:7px;
+  }
+  .fglyph{font-size:34px;line-height:1}
+  .flabel{font-size:11px;color:var(--muted);text-align:center}
+  .wheel-tile{display:flex;padding:7px;gap:4px}
+  .wheel-tile .mini{flex:1;min-height:0}
+  .wheel-tile .mini svg{width:100%;height:100%;display:block}
+  .wheel-tile .flabel{flex:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+@media print{.hint,.btn,.nav{display:none}.tile{aspect-ratio:auto}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Mapa Astral de Astolfo</h1>
+  <p class="birth">Belo Horizonte, Brazil — 10/01/2026 15:30 (America/Sao_Paulo)</p>
+</header>
+<div class="layout">
+  <section class="wheel" aria-label="Roda do mapa astral">
+    <div class="wheelbar"><h3>Mapa</h3>
+      <button class="btn" type="button" onclick="back()">‹ Voltar</button></div>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 315.71 56.79 A 480.00 480.00 0 0 0 118.79 208.31 L 169.62 247.21 A 416.00 416.00 0 0 1 340.28 115.88 Z"/>
+<text class="sign-glyph" x="226.8" y="145.0">♈</text>
+<path class="sign sign-taurus element-earth" d="M 118.79 208.31 A 480.00 480.00 0 0 0 24.02 438.00 L 87.49 446.26 A 416.00 416.00 0 0 1 169.62 247.21 Z"/>
+<text class="sign-glyph" x="85.9" y="329.1">♉</text>
+<path class="sign sign-gemini element-air" d="M 24.02 438.00 A 480.00 480.00 0 0 0 56.79 684.29 L 115.88 659.72 A 416.00 416.00 0 0 1 87.49 446.26 Z"/>
+<text class="sign-glyph" x="55.9" y="559.1">♊</text>
+<path class="sign sign-cancer element-water" d="M 56.79 684.29 A 480.00 480.00 0 0 0 208.31 881.21 L 247.21 830.38 A 416.00 416.00 0 0 1 115.88 659.72 Z"/>
+<text class="sign-glyph" x="145.0" y="773.2">♋</text>
+<path class="sign sign-leo element-fire" d="M 208.31 881.21 A 480.00 480.00 0 0 0 438.00 975.98 L 446.26 912.51 A 416.00 416.00 0 0 1 247.21 830.38 Z"/>
+<text class="sign-glyph" x="329.1" y="914.1">♌</text>
+<path class="sign sign-virgo element-earth" d="M 438.00 975.98 A 480.00 480.00 0 0 0 684.29 943.21 L 659.72 884.12 A 416.00 416.00 0 0 1 446.26 912.51 Z"/>
+<text class="sign-glyph" x="559.1" y="944.1">♍</text>
+<path class="sign sign-libra element-air" d="M 684.29 943.21 A 480.00 480.00 0 0 0 881.21 791.69 L 830.38 752.79 A 416.00 416.00 0 0 1 659.72 884.12 Z"/>
+<text class="sign-glyph" x="773.2" y="855.0">♎</text>
+<path class="sign sign-scorpio element-water" d="M 881.21 791.69 A 480.00 480.00 0 0 0 975.98 562.00 L 912.51 553.74 A 416.00 416.00 0 0 1 830.38 752.79 Z"/>
+<text class="sign-glyph" x="914.1" y="670.9">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 975.98 562.00 A 480.00 480.00 0 0 0 943.21 315.71 L 884.12 340.28 A 416.00 416.00 0 0 1 912.51 553.74 Z"/>
+<text class="sign-glyph" x="944.1" y="440.9">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 943.21 315.71 A 480.00 480.00 0 0 0 791.69 118.79 L 752.79 169.62 A 416.00 416.00 0 0 1 884.12 340.28 Z"/>
+<text class="sign-glyph" x="855.0" y="226.8">♑</text>
+<path class="sign sign-aquarius element-air" d="M 791.69 118.79 A 480.00 480.00 0 0 0 562.00 24.02 L 553.74 87.49 A 416.00 416.00 0 0 1 752.79 169.62 Z"/>
+<text class="sign-glyph" x="670.9" y="85.9">♒</text>
+<path class="sign sign-pisces element-water" d="M 562.00 24.02 A 480.00 480.00 0 0 0 315.71 56.79 L 340.28 115.88 A 416.00 416.00 0 0 1 553.74 87.49 Z"/>
+<text class="sign-glyph" x="440.9" y="55.9">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="344.9" y1="127.0" x2="340.3" y2="115.9"/>
+<line class="tick" x1="310.6" y1="137.5" x2="307.4" y2="131.3"/>
+<line class="tick major" x1="282.5" y1="159.6" x2="276.0" y2="149.5"/>
+<line class="tick" x1="250.6" y1="175.9" x2="246.3" y2="170.3"/>
+<line class="tick major" x1="226.7" y1="202.5" x2="218.5" y2="193.7"/>
+<line class="tick" x1="198.1" y1="224.1" x2="192.9" y2="219.4"/>
+<line class="tick major" x1="179.1" y1="254.5" x2="169.6" y2="247.2"/>
+<line class="tick" x1="154.8" y1="280.7" x2="148.8" y2="277.0"/>
+<line class="tick major" x1="141.4" y1="313.9" x2="130.7" y2="308.4"/>
+<line class="tick" x1="121.9" y1="344.0" x2="115.4" y2="341.3"/>
+<line class="tick major" x1="114.5" y1="379.0" x2="103.1" y2="375.4"/>
+<line class="tick" x1="100.6" y1="412.0" x2="93.7" y2="410.5"/>
+<line class="tick major" x1="99.4" y1="447.8" x2="87.5" y2="446.3"/>
+<line class="tick" x1="91.4" y1="482.7" x2="84.4" y2="482.4"/>
+<line class="tick major" x1="96.4" y1="518.2" x2="84.4" y2="518.7"/>
+<line class="tick" x1="94.6" y1="553.9" x2="87.6" y2="554.9"/>
+<line class="tick major" x1="105.7" y1="588.0" x2="94.0" y2="590.6"/>
+<line class="tick" x1="110.1" y1="623.5" x2="103.4" y2="625.6"/>
+<line class="tick major" x1="127.0" y1="655.1" x2="115.9" y2="659.7"/>
+<line class="tick" x1="137.5" y1="689.4" x2="131.3" y2="692.6"/>
+<line class="tick major" x1="159.6" y1="717.5" x2="149.5" y2="724.0"/>
+<line class="tick" x1="175.9" y1="749.4" x2="170.3" y2="753.7"/>
+<line class="tick major" x1="202.5" y1="773.3" x2="193.7" y2="781.5"/>
+<line class="tick" x1="224.1" y1="801.9" x2="219.4" y2="807.1"/>
+<line class="tick major" x1="254.5" y1="820.9" x2="247.2" y2="830.4"/>
+<line class="tick" x1="280.7" y1="845.2" x2="277.0" y2="851.2"/>
+<line class="tick major" x1="313.9" y1="858.6" x2="308.4" y2="869.3"/>
+<line class="tick" x1="344.0" y1="878.1" x2="341.3" y2="884.6"/>
+<line class="tick major" x1="379.0" y1="885.5" x2="375.4" y2="896.9"/>
+<line class="tick" x1="412.0" y1="899.4" x2="410.5" y2="906.3"/>
+<line class="tick major" x1="447.8" y1="900.6" x2="446.3" y2="912.5"/>
+<line class="tick" x1="482.7" y1="908.6" x2="482.4" y2="915.6"/>
+<line class="tick major" x1="518.2" y1="903.6" x2="518.7" y2="915.6"/>
+<line class="tick" x1="553.9" y1="905.4" x2="554.9" y2="912.4"/>
+<line class="tick major" x1="588.0" y1="894.3" x2="590.6" y2="906.0"/>
+<line class="tick" x1="623.5" y1="889.9" x2="625.6" y2="896.6"/>
+<line class="tick major" x1="655.1" y1="873.0" x2="659.7" y2="884.1"/>
+<line class="tick" x1="689.4" y1="862.5" x2="692.6" y2="868.7"/>
+<line class="tick major" x1="717.5" y1="840.4" x2="724.0" y2="850.5"/>
+<line class="tick" x1="749.4" y1="824.1" x2="753.7" y2="829.7"/>
+<line class="tick major" x1="773.3" y1="797.5" x2="781.5" y2="806.3"/>
+<line class="tick" x1="801.9" y1="775.9" x2="807.1" y2="780.6"/>
+<line class="tick major" x1="820.9" y1="745.5" x2="830.4" y2="752.8"/>
+<line class="tick" x1="845.2" y1="719.3" x2="851.2" y2="723.0"/>
+<line class="tick major" x1="858.6" y1="686.1" x2="869.3" y2="691.6"/>
+<line class="tick" x1="878.1" y1="656.0" x2="884.6" y2="658.7"/>
+<line class="tick major" x1="885.5" y1="621.0" x2="896.9" y2="624.6"/>
+<line class="tick" x1="899.4" y1="588.0" x2="906.3" y2="589.5"/>
+<line class="tick major" x1="900.6" y1="552.2" x2="912.5" y2="553.7"/>
+<line class="tick" x1="908.6" y1="517.3" x2="915.6" y2="517.6"/>
+<line class="tick major" x1="903.6" y1="481.8" x2="915.6" y2="481.3"/>
+<line class="tick" x1="905.4" y1="446.1" x2="912.4" y2="445.1"/>
+<line class="tick major" x1="894.3" y1="412.0" x2="906.0" y2="409.4"/>
+<line class="tick" x1="889.9" y1="376.5" x2="896.6" y2="374.4"/>
+<line class="tick major" x1="873.0" y1="344.9" x2="884.1" y2="340.3"/>
+<line class="tick" x1="862.5" y1="310.6" x2="868.7" y2="307.4"/>
+<line class="tick major" x1="840.4" y1="282.5" x2="850.5" y2="276.0"/>
+<line class="tick" x1="824.1" y1="250.6" x2="829.7" y2="246.3"/>
+<line class="tick major" x1="797.5" y1="226.7" x2="806.3" y2="218.5"/>
+<line class="tick" x1="775.9" y1="198.1" x2="780.6" y2="192.9"/>
+<line class="tick major" x1="745.5" y1="179.1" x2="752.8" y2="169.6"/>
+<line class="tick" x1="719.3" y1="154.8" x2="723.0" y2="148.8"/>
+<line class="tick major" x1="686.1" y1="141.4" x2="691.6" y2="130.7"/>
+<line class="tick" x1="656.0" y1="121.9" x2="658.7" y2="115.4"/>
+<line class="tick major" x1="621.0" y1="114.5" x2="624.6" y2="103.1"/>
+<line class="tick" x1="588.0" y1="100.6" x2="589.5" y2="93.7"/>
+<line class="tick major" x1="552.2" y1="99.4" x2="553.7" y2="87.5"/>
+<line class="tick" x1="517.3" y1="91.4" x2="517.6" y2="84.4"/>
+<line class="tick major" x1="481.8" y1="96.4" x2="481.3" y2="84.4"/>
+<line class="tick" x1="446.1" y1="94.6" x2="445.1" y2="87.6"/>
+<line class="tick major" x1="412.0" y1="105.7" x2="409.4" y2="94.0"/>
+<line class="tick" x1="376.5" y1="110.1" x2="374.4" y2="103.4"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="293.5" y1="618.3" x2="139.1" y2="706.8"/>
+<line class="cusp house-3" x1="387.3" y1="709.6" x2="303.1" y2="866.4"/>
+<line class="cusp house-4 axis" x1="521.0" y1="737.1" x2="536.7" y2="914.4"/>
+<text class="axis-label" x="543.6" y="992.1">IC</text>
+<line class="cusp house-5" x1="642.8" y1="690.4" x2="749.7" y2="832.8"/>
+<line class="cusp house-6" x1="715.7" y1="600.6" x2="877.0" y2="675.8"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="706.5" y1="381.7" x2="860.9" y2="293.2"/>
+<line class="cusp house-9" x1="612.7" y1="290.4" x2="696.9" y2="133.6"/>
+<line class="cusp house-10 axis" x1="479.0" y1="262.9" x2="463.3" y2="85.6"/>
+<text class="axis-label" x="456.4" y="7.9">MC</text>
+<line class="cusp house-11" x1="357.2" y1="309.6" x2="250.3" y2="167.2"/>
+<line class="cusp house-12" x1="284.3" y1="399.4" x2="123.0" y2="324.2"/>
+<text class="house-number" x="244.9" y="567.9">1</text>
+<text class="house-number" x="315.9" y="689.2">2</text>
+<text class="house-number" x="446.9" y="758.6">3</text>
+<text class="house-number" x="594.5" y="746.5">4</text>
+<text class="house-number" x="705.0" y="666.3">5</text>
+<text class="house-number" x="757.7" y="557.1">6</text>
+<text class="house-number" x="755.1" y="432.1">7</text>
+<text class="house-number" x="684.1" y="310.8">8</text>
+<text class="house-number" x="553.1" y="241.4">9</text>
+<text class="house-number" x="405.5" y="253.5">10</text>
+<text class="house-number" x="295.0" y="333.7">11</text>
+<text class="house-number" x="242.3" y="442.9">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-square" x1="673.8" y1="337.4" x2="666.4" y2="670.2"/>
+<path class="aspect aspect-sun-mercury aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 678.15 333.27"/>
+<path class="aspect aspect-sun-venus aspect-conjunction" d="M 678.15 333.27 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<path class="aspect aspect-sun-mars aspect-conjunction" d="M 679.07 334.26 A 244.00 244.00 0 0 0 678.15 333.27"/>
+<line class="aspect aspect-sun-jupiter aspect-opposition" x1="673.8" y1="337.4" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-moon-mercury aspect-square" x1="666.4" y1="670.2" x2="691.5" y2="358.7"/>
+<line class="aspect aspect-moon-venus aspect-square" x1="666.4" y1="670.2" x2="671.0" y2="334.4"/>
+<line class="aspect aspect-moon-mars aspect-square" x1="666.4" y1="670.2" x2="674.7" y2="338.3"/>
+<line class="aspect aspect-moon-jupiter aspect-square" x1="666.4" y1="670.2" x2="324.9" y2="661.2"/>
+<path class="aspect aspect-mercury-venus aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<path class="aspect aspect-mercury-mars aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 679.07 334.26"/>
+<line class="aspect aspect-mercury-jupiter aspect-opposition" x1="691.5" y1="358.7" x2="324.9" y2="661.2"/>
+<path class="aspect aspect-venus-mars aspect-conjunction" d="M 679.07 334.26 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<line class="aspect aspect-venus-jupiter aspect-opposition" x1="671.0" y1="334.4" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-venus-saturn aspect-sextile" x1="671.0" y1="334.4" x2="421.0" y2="275.5"/>
+<line class="aspect aspect-mars-jupiter aspect-opposition" x1="674.7" y1="338.3" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-jupiter-saturn aspect-trine" x1="324.9" y1="661.2" x2="421.0" y2="275.5"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="705.3" y1="286.7" x2="673.8" y2="337.4"/><circle class="anchor" cx="673.8" cy="337.4" r="4"/><text class="planet-glyph" x="744.1" y="246.4">☉</text><text class="degree" x="720.5" y="270.9">20°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="706.9" y1="711.7" x2="666.4" y2="670.2"/><circle class="anchor" cx="666.4" cy="670.2" r="4"/><text class="planet-glyph" x="746.0" y="751.7">☽</text><text class="degree" x="722.3" y="727.4">21°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="761.1" y1="360.6" x2="691.5" y2="358.7"/><circle class="anchor" cx="691.5" cy="358.7" r="4"/><text class="planet-glyph" x="810.5" y="334.2">☿</text><text class="degree" x="780.5" y="350.2">13°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="669.4" y1="257.2" x2="671.0" y2="334.4"/><circle class="anchor" cx="671.0" cy="334.4" r="4"/><text class="planet-glyph" x="701.4" y="211.3">♀</text><text class="degree" x="682.0" y="239.2">21°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="736.1" y1="321.5" x2="674.7" y2="338.3"/><circle class="anchor" cx="674.7" cy="338.3" r="4"/><text class="planet-glyph" x="780.8" y="287.7">♂</text><text class="degree" x="753.6" y="308.2">20°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="282.2" y1="700.5" x2="324.9" y2="661.2"/><circle class="anchor" cx="324.9" cy="661.2" r="4"/><text class="planet-glyph" x="241.0" y="738.4">♃</text><text class="degree" x="266.0" y="715.4">20°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="401.7" y1="220.8" x2="421.0" y2="275.5"/><circle class="anchor" cx="421.0" cy="275.5" r="4"/><text class="planet-glyph" x="383.2" y="168.0">♄</text><text class="degree" x="394.4" y="200.0">26°</text></g>
+</g>
+<text class="caption" x="24" y="978">Astolfo — 10/01/2026 15:30, Belo Horizonte</text>
+</svg>
+  </section>
+  <section class="reading" aria-label="Interpretação">
+    <p class="hint">Toque em um tema para ler — Voltar ou Esc retorna.</p>
+    <div class="tiles" id="tiles">
+<button class="tile wheel-tile" type="button" onclick="showWheel()" style="animation-delay:0ms" aria-label="Abrir o mapa">
+  <span class="mini"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 315.71 56.79 A 480.00 480.00 0 0 0 118.79 208.31 L 169.62 247.21 A 416.00 416.00 0 0 1 340.28 115.88 Z"/>
+<text class="sign-glyph" x="226.8" y="145.0">♈</text>
+<path class="sign sign-taurus element-earth" d="M 118.79 208.31 A 480.00 480.00 0 0 0 24.02 438.00 L 87.49 446.26 A 416.00 416.00 0 0 1 169.62 247.21 Z"/>
+<text class="sign-glyph" x="85.9" y="329.1">♉</text>
+<path class="sign sign-gemini element-air" d="M 24.02 438.00 A 480.00 480.00 0 0 0 56.79 684.29 L 115.88 659.72 A 416.00 416.00 0 0 1 87.49 446.26 Z"/>
+<text class="sign-glyph" x="55.9" y="559.1">♊</text>
+<path class="sign sign-cancer element-water" d="M 56.79 684.29 A 480.00 480.00 0 0 0 208.31 881.21 L 247.21 830.38 A 416.00 416.00 0 0 1 115.88 659.72 Z"/>
+<text class="sign-glyph" x="145.0" y="773.2">♋</text>
+<path class="sign sign-leo element-fire" d="M 208.31 881.21 A 480.00 480.00 0 0 0 438.00 975.98 L 446.26 912.51 A 416.00 416.00 0 0 1 247.21 830.38 Z"/>
+<text class="sign-glyph" x="329.1" y="914.1">♌</text>
+<path class="sign sign-virgo element-earth" d="M 438.00 975.98 A 480.00 480.00 0 0 0 684.29 943.21 L 659.72 884.12 A 416.00 416.00 0 0 1 446.26 912.51 Z"/>
+<text class="sign-glyph" x="559.1" y="944.1">♍</text>
+<path class="sign sign-libra element-air" d="M 684.29 943.21 A 480.00 480.00 0 0 0 881.21 791.69 L 830.38 752.79 A 416.00 416.00 0 0 1 659.72 884.12 Z"/>
+<text class="sign-glyph" x="773.2" y="855.0">♎</text>
+<path class="sign sign-scorpio element-water" d="M 881.21 791.69 A 480.00 480.00 0 0 0 975.98 562.00 L 912.51 553.74 A 416.00 416.00 0 0 1 830.38 752.79 Z"/>
+<text class="sign-glyph" x="914.1" y="670.9">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 975.98 562.00 A 480.00 480.00 0 0 0 943.21 315.71 L 884.12 340.28 A 416.00 416.00 0 0 1 912.51 553.74 Z"/>
+<text class="sign-glyph" x="944.1" y="440.9">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 943.21 315.71 A 480.00 480.00 0 0 0 791.69 118.79 L 752.79 169.62 A 416.00 416.00 0 0 1 884.12 340.28 Z"/>
+<text class="sign-glyph" x="855.0" y="226.8">♑</text>
+<path class="sign sign-aquarius element-air" d="M 791.69 118.79 A 480.00 480.00 0 0 0 562.00 24.02 L 553.74 87.49 A 416.00 416.00 0 0 1 752.79 169.62 Z"/>
+<text class="sign-glyph" x="670.9" y="85.9">♒</text>
+<path class="sign sign-pisces element-water" d="M 562.00 24.02 A 480.00 480.00 0 0 0 315.71 56.79 L 340.28 115.88 A 416.00 416.00 0 0 1 553.74 87.49 Z"/>
+<text class="sign-glyph" x="440.9" y="55.9">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="344.9" y1="127.0" x2="340.3" y2="115.9"/>
+<line class="tick" x1="310.6" y1="137.5" x2="307.4" y2="131.3"/>
+<line class="tick major" x1="282.5" y1="159.6" x2="276.0" y2="149.5"/>
+<line class="tick" x1="250.6" y1="175.9" x2="246.3" y2="170.3"/>
+<line class="tick major" x1="226.7" y1="202.5" x2="218.5" y2="193.7"/>
+<line class="tick" x1="198.1" y1="224.1" x2="192.9" y2="219.4"/>
+<line class="tick major" x1="179.1" y1="254.5" x2="169.6" y2="247.2"/>
+<line class="tick" x1="154.8" y1="280.7" x2="148.8" y2="277.0"/>
+<line class="tick major" x1="141.4" y1="313.9" x2="130.7" y2="308.4"/>
+<line class="tick" x1="121.9" y1="344.0" x2="115.4" y2="341.3"/>
+<line class="tick major" x1="114.5" y1="379.0" x2="103.1" y2="375.4"/>
+<line class="tick" x1="100.6" y1="412.0" x2="93.7" y2="410.5"/>
+<line class="tick major" x1="99.4" y1="447.8" x2="87.5" y2="446.3"/>
+<line class="tick" x1="91.4" y1="482.7" x2="84.4" y2="482.4"/>
+<line class="tick major" x1="96.4" y1="518.2" x2="84.4" y2="518.7"/>
+<line class="tick" x1="94.6" y1="553.9" x2="87.6" y2="554.9"/>
+<line class="tick major" x1="105.7" y1="588.0" x2="94.0" y2="590.6"/>
+<line class="tick" x1="110.1" y1="623.5" x2="103.4" y2="625.6"/>
+<line class="tick major" x1="127.0" y1="655.1" x2="115.9" y2="659.7"/>
+<line class="tick" x1="137.5" y1="689.4" x2="131.3" y2="692.6"/>
+<line class="tick major" x1="159.6" y1="717.5" x2="149.5" y2="724.0"/>
+<line class="tick" x1="175.9" y1="749.4" x2="170.3" y2="753.7"/>
+<line class="tick major" x1="202.5" y1="773.3" x2="193.7" y2="781.5"/>
+<line class="tick" x1="224.1" y1="801.9" x2="219.4" y2="807.1"/>
+<line class="tick major" x1="254.5" y1="820.9" x2="247.2" y2="830.4"/>
+<line class="tick" x1="280.7" y1="845.2" x2="277.0" y2="851.2"/>
+<line class="tick major" x1="313.9" y1="858.6" x2="308.4" y2="869.3"/>
+<line class="tick" x1="344.0" y1="878.1" x2="341.3" y2="884.6"/>
+<line class="tick major" x1="379.0" y1="885.5" x2="375.4" y2="896.9"/>
+<line class="tick" x1="412.0" y1="899.4" x2="410.5" y2="906.3"/>
+<line class="tick major" x1="447.8" y1="900.6" x2="446.3" y2="912.5"/>
+<line class="tick" x1="482.7" y1="908.6" x2="482.4" y2="915.6"/>
+<line class="tick major" x1="518.2" y1="903.6" x2="518.7" y2="915.6"/>
+<line class="tick" x1="553.9" y1="905.4" x2="554.9" y2="912.4"/>
+<line class="tick major" x1="588.0" y1="894.3" x2="590.6" y2="906.0"/>
+<line class="tick" x1="623.5" y1="889.9" x2="625.6" y2="896.6"/>
+<line class="tick major" x1="655.1" y1="873.0" x2="659.7" y2="884.1"/>
+<line class="tick" x1="689.4" y1="862.5" x2="692.6" y2="868.7"/>
+<line class="tick major" x1="717.5" y1="840.4" x2="724.0" y2="850.5"/>
+<line class="tick" x1="749.4" y1="824.1" x2="753.7" y2="829.7"/>
+<line class="tick major" x1="773.3" y1="797.5" x2="781.5" y2="806.3"/>
+<line class="tick" x1="801.9" y1="775.9" x2="807.1" y2="780.6"/>
+<line class="tick major" x1="820.9" y1="745.5" x2="830.4" y2="752.8"/>
+<line class="tick" x1="845.2" y1="719.3" x2="851.2" y2="723.0"/>
+<line class="tick major" x1="858.6" y1="686.1" x2="869.3" y2="691.6"/>
+<line class="tick" x1="878.1" y1="656.0" x2="884.6" y2="658.7"/>
+<line class="tick major" x1="885.5" y1="621.0" x2="896.9" y2="624.6"/>
+<line class="tick" x1="899.4" y1="588.0" x2="906.3" y2="589.5"/>
+<line class="tick major" x1="900.6" y1="552.2" x2="912.5" y2="553.7"/>
+<line class="tick" x1="908.6" y1="517.3" x2="915.6" y2="517.6"/>
+<line class="tick major" x1="903.6" y1="481.8" x2="915.6" y2="481.3"/>
+<line class="tick" x1="905.4" y1="446.1" x2="912.4" y2="445.1"/>
+<line class="tick major" x1="894.3" y1="412.0" x2="906.0" y2="409.4"/>
+<line class="tick" x1="889.9" y1="376.5" x2="896.6" y2="374.4"/>
+<line class="tick major" x1="873.0" y1="344.9" x2="884.1" y2="340.3"/>
+<line class="tick" x1="862.5" y1="310.6" x2="868.7" y2="307.4"/>
+<line class="tick major" x1="840.4" y1="282.5" x2="850.5" y2="276.0"/>
+<line class="tick" x1="824.1" y1="250.6" x2="829.7" y2="246.3"/>
+<line class="tick major" x1="797.5" y1="226.7" x2="806.3" y2="218.5"/>
+<line class="tick" x1="775.9" y1="198.1" x2="780.6" y2="192.9"/>
+<line class="tick major" x1="745.5" y1="179.1" x2="752.8" y2="169.6"/>
+<line class="tick" x1="719.3" y1="154.8" x2="723.0" y2="148.8"/>
+<line class="tick major" x1="686.1" y1="141.4" x2="691.6" y2="130.7"/>
+<line class="tick" x1="656.0" y1="121.9" x2="658.7" y2="115.4"/>
+<line class="tick major" x1="621.0" y1="114.5" x2="624.6" y2="103.1"/>
+<line class="tick" x1="588.0" y1="100.6" x2="589.5" y2="93.7"/>
+<line class="tick major" x1="552.2" y1="99.4" x2="553.7" y2="87.5"/>
+<line class="tick" x1="517.3" y1="91.4" x2="517.6" y2="84.4"/>
+<line class="tick major" x1="481.8" y1="96.4" x2="481.3" y2="84.4"/>
+<line class="tick" x1="446.1" y1="94.6" x2="445.1" y2="87.6"/>
+<line class="tick major" x1="412.0" y1="105.7" x2="409.4" y2="94.0"/>
+<line class="tick" x1="376.5" y1="110.1" x2="374.4" y2="103.4"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="293.5" y1="618.3" x2="139.1" y2="706.8"/>
+<line class="cusp house-3" x1="387.3" y1="709.6" x2="303.1" y2="866.4"/>
+<line class="cusp house-4 axis" x1="521.0" y1="737.1" x2="536.7" y2="914.4"/>
+<text class="axis-label" x="543.6" y="992.1">IC</text>
+<line class="cusp house-5" x1="642.8" y1="690.4" x2="749.7" y2="832.8"/>
+<line class="cusp house-6" x1="715.7" y1="600.6" x2="877.0" y2="675.8"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="706.5" y1="381.7" x2="860.9" y2="293.2"/>
+<line class="cusp house-9" x1="612.7" y1="290.4" x2="696.9" y2="133.6"/>
+<line class="cusp house-10 axis" x1="479.0" y1="262.9" x2="463.3" y2="85.6"/>
+<text class="axis-label" x="456.4" y="7.9">MC</text>
+<line class="cusp house-11" x1="357.2" y1="309.6" x2="250.3" y2="167.2"/>
+<line class="cusp house-12" x1="284.3" y1="399.4" x2="123.0" y2="324.2"/>
+<text class="house-number" x="244.9" y="567.9">1</text>
+<text class="house-number" x="315.9" y="689.2">2</text>
+<text class="house-number" x="446.9" y="758.6">3</text>
+<text class="house-number" x="594.5" y="746.5">4</text>
+<text class="house-number" x="705.0" y="666.3">5</text>
+<text class="house-number" x="757.7" y="557.1">6</text>
+<text class="house-number" x="755.1" y="432.1">7</text>
+<text class="house-number" x="684.1" y="310.8">8</text>
+<text class="house-number" x="553.1" y="241.4">9</text>
+<text class="house-number" x="405.5" y="253.5">10</text>
+<text class="house-number" x="295.0" y="333.7">11</text>
+<text class="house-number" x="242.3" y="442.9">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-square" x1="673.8" y1="337.4" x2="666.4" y2="670.2"/>
+<path class="aspect aspect-sun-mercury aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 678.15 333.27"/>
+<path class="aspect aspect-sun-venus aspect-conjunction" d="M 678.15 333.27 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<path class="aspect aspect-sun-mars aspect-conjunction" d="M 679.07 334.26 A 244.00 244.00 0 0 0 678.15 333.27"/>
+<line class="aspect aspect-sun-jupiter aspect-opposition" x1="673.8" y1="337.4" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-moon-mercury aspect-square" x1="666.4" y1="670.2" x2="691.5" y2="358.7"/>
+<line class="aspect aspect-moon-venus aspect-square" x1="666.4" y1="670.2" x2="671.0" y2="334.4"/>
+<line class="aspect aspect-moon-mars aspect-square" x1="666.4" y1="670.2" x2="674.7" y2="338.3"/>
+<line class="aspect aspect-moon-jupiter aspect-square" x1="666.4" y1="670.2" x2="324.9" y2="661.2"/>
+<path class="aspect aspect-mercury-venus aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<path class="aspect aspect-mercury-mars aspect-conjunction" d="M 696.33 355.11 A 244.00 244.00 0 0 0 679.07 334.26"/>
+<line class="aspect aspect-mercury-jupiter aspect-opposition" x1="691.5" y1="358.7" x2="324.9" y2="661.2"/>
+<path class="aspect aspect-venus-mars aspect-conjunction" d="M 679.07 334.26 A 244.00 244.00 0 0 0 675.29 330.27"/>
+<line class="aspect aspect-venus-jupiter aspect-opposition" x1="671.0" y1="334.4" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-venus-saturn aspect-sextile" x1="671.0" y1="334.4" x2="421.0" y2="275.5"/>
+<line class="aspect aspect-mars-jupiter aspect-opposition" x1="674.7" y1="338.3" x2="324.9" y2="661.2"/>
+<line class="aspect aspect-jupiter-saturn aspect-trine" x1="324.9" y1="661.2" x2="421.0" y2="275.5"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="705.3" y1="286.7" x2="673.8" y2="337.4"/><circle class="anchor" cx="673.8" cy="337.4" r="4"/><text class="planet-glyph" x="744.1" y="246.4">☉</text><text class="degree" x="720.5" y="270.9">20°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="706.9" y1="711.7" x2="666.4" y2="670.2"/><circle class="anchor" cx="666.4" cy="670.2" r="4"/><text class="planet-glyph" x="746.0" y="751.7">☽</text><text class="degree" x="722.3" y="727.4">21°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="761.1" y1="360.6" x2="691.5" y2="358.7"/><circle class="anchor" cx="691.5" cy="358.7" r="4"/><text class="planet-glyph" x="810.5" y="334.2">☿</text><text class="degree" x="780.5" y="350.2">13°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="669.4" y1="257.2" x2="671.0" y2="334.4"/><circle class="anchor" cx="671.0" cy="334.4" r="4"/><text class="planet-glyph" x="701.4" y="211.3">♀</text><text class="degree" x="682.0" y="239.2">21°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="736.1" y1="321.5" x2="674.7" y2="338.3"/><circle class="anchor" cx="674.7" cy="338.3" r="4"/><text class="planet-glyph" x="780.8" y="287.7">♂</text><text class="degree" x="753.6" y="308.2">20°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="282.2" y1="700.5" x2="324.9" y2="661.2"/><circle class="anchor" cx="324.9" cy="661.2" r="4"/><text class="planet-glyph" x="241.0" y="738.4">♃</text><text class="degree" x="266.0" y="715.4">20°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="401.7" y1="220.8" x2="421.0" y2="275.5"/><circle class="anchor" cx="421.0" cy="275.5" r="4"/><text class="planet-glyph" x="383.2" y="168.0">♄</text><text class="degree" x="394.4" y="200.0">26°</text></g>
+</g>
+<text class="caption" x="24" y="978">Astolfo — 10/01/2026 15:30, Belo Horizonte</text>
+</svg></span>
+  <span class="flabel">Mapa</span>
+</button>
+<button class="tile" type="button" onclick="show('visao-geral')" style="animation-delay:40ms" data-section="visao-geral" data-planets="sun moon mercury venus mars jupiter saturn" data-aspects="sun-mars sun-jupiter" data-houses="8 5 10 1">
+  <span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☉♂</span></span>
+  <h3>Visão Geral do Mapa</h3>
+  <span class="face"><span class="fglyph">🌟</span><span class="flabel">Visão geral</span></span>
+</button>
+<button class="tile" type="button" onclick="show('identidade-capricorniana')" style="animation-delay:80ms" data-section="identidade-capricorniana" data-planets="sun mercury venus mars" data-aspects="sun-mercury sun-venus sun-mars mercury-venus venus-mars" data-houses="8">
+  <span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic aspect">☉☿</span></span>
+  <h3>Um Núcleo de Ferro em Capricórnio</h3>
+  <span class="face"><span class="fglyph">👤</span><span class="flabel">Identidade</span></span>
+</button>
+<button class="tile" type="button" onclick="show('tensao-emocional')" style="animation-delay:120ms" data-section="tensao-emocional" data-planets="moon mercury venus mars jupiter" data-aspects="sun-moon moon-mercury moon-venus moon-mars moon-jupiter" data-houses="5">
+  <span class="ics"><span class="ic theme">⚔️</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic aspect">☉☽</span></span>
+  <h3>A Lua em Libra e o Conflito Interno</h3>
+  <span class="face"><span class="fglyph">⚔️</span><span class="flabel">Desafios</span></span>
+</button>
+<button class="tile" type="button" onclick="show('amor-e-afeto')" style="animation-delay:160ms" data-section="amor-e-afeto" data-planets="moon venus saturn" data-aspects="moon-venus venus-mars venus-saturn" data-houses="5 8">
+  <span class="ics"><span class="ic theme">💞</span><span class="ic body">☽</span><span class="ic body">♀</span><span class="ic body">♄</span><span class="ic aspect">☽♀</span></span>
+  <h3>O Amor entre o Prazer e o Compromisso</h3>
+  <span class="face"><span class="fglyph">💞</span><span class="flabel">Amor</span></span>
+</button>
+<button class="tile" type="button" onclick="show('vocacao-e-saturno')" style="animation-delay:200ms" data-section="vocacao-e-saturno" data-planets="saturn jupiter" data-aspects="jupiter-saturn" data-houses="10">
+  <span class="ics"><span class="ic theme">💼</span><span class="ic body">♄</span><span class="ic body">♃</span><span class="ic aspect">♃♄</span><span class="ic house">⌂</span></span>
+  <h3>Vocação, Disciplina e Realização</h3>
+  <span class="face"><span class="fglyph">💼</span><span class="flabel">Carreira</span></span>
+</button>
+<button class="tile" type="button" onclick="show('expansao-versus-controle')" style="animation-delay:240ms" data-section="expansao-versus-controle" data-planets="jupiter sun venus mars" data-aspects="sun-jupiter venus-jupiter mars-jupiter" data-houses="2 8">
+  <span class="ics"><span class="ic theme">🪙</span><span class="ic body">♃</span><span class="ic body">☉</span><span class="ic body">♀</span><span class="ic aspect">☉♃</span></span>
+  <h3>Júpiter em Câncer e a Busca por Segurança</h3>
+  <span class="face"><span class="fglyph">🪙</span><span class="flabel">Recursos</span></span>
+</button>
+<button class="tile" type="button" onclick="show('mente-e-comunicacao')" style="animation-delay:280ms" data-section="mente-e-comunicacao" data-planets="mercury moon jupiter" data-aspects="moon-mercury mercury-jupiter mercury-venus" data-houses="1 8">
+  <span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">☽</span><span class="ic body">♃</span><span class="ic aspect">☽☿</span></span>
+  <h3>Mente Prática e Comunicação</h3>
+  <span class="face"><span class="fglyph">🧠</span><span class="flabel">Mente</span></span>
+</button>
+<button class="tile" type="button" onclick="show('caminho-de-crescimento')" style="animation-delay:320ms" data-section="caminho-de-crescimento" data-planets="saturn jupiter sun moon" data-aspects="jupiter-saturn sun-jupiter sun-moon" data-houses="8">
+  <span class="ics"><span class="ic theme">🌱</span><span class="ic body">♄</span><span class="ic body">♃</span><span class="ic body">☉</span><span class="ic aspect">♃♄</span></span>
+  <h3>Transformação e Amadurecimento</h3>
+  <span class="face"><span class="fglyph">🌱</span><span class="flabel">Crescimento</span></span>
+</button>
+<button class="tile data-tile" type="button" onclick="show('dados')" style="animation-delay:360ms">
+  <span class="ics"><span class="ic general">📋</span></span>
+  <h3>Dados do mapa</h3>
+  <span class="face"><span class="fglyph">📋</span><span class="flabel">Dados</span></span>
+</button>
+    </div>
+<article class="detail" id="d-visao-geral" data-section="visao-geral" data-planets="sun moon mercury venus mars jupiter saturn" data-aspects="sun-mars sun-jupiter" data-houses="8 5 10 1">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☉♂</span></span>Visão Geral do Mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">☿ Mercury</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">♃ Jupiter</span><span class="chip">♄ Saturn</span><span class="chip">☉ ☌ ♂ Sun–Mars</span><span class="chip">☉ ☍ ♃ Sun–Jupiter</span><span class="chip">⌂ Casa 8</span><span class="chip">⌂ Casa 5</span><span class="chip">⌂ Casa 10</span><span class="chip">⌂ Casa 1</span>
+  <div class="body"><p>Astolfo carrega uma poderosa concentração de energia em Capricórnio na Casa 8: Sol, Mercúrio, Vênus e Marte reunidos formam um núcleo denso, sério e transformador. Com Ascendente em Gêmeos, sua aparência externa é comunicativa, curiosa e versátil, mas por dentro há profundidade, ambição e um instinto de mergulhar nas questões mais intensas da vida. A Lua em Libra na Casa 5 traz sensibilidade estética e necessidade de harmonia afetiva, enquanto Saturno em Peixes no topo do mapa (Casa 10) aponta para uma vocação marcada por disciplina, responsabilidade e crescimento espiritual. O grande eixo de tensão Sol-Marte oposto a Júpiter, junto às quadraturas da Lua, revela uma personalidade que oscila entre controle e expansão, entre contenção e desejo de mais.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-capricorniana',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-identidade-capricorniana" data-section="identidade-capricorniana" data-planets="sun mercury venus mars" data-aspects="sun-mercury sun-venus sun-mars mercury-venus venus-mars" data-houses="8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic aspect">☉☿</span></span>Um Núcleo de Ferro em Capricórnio</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☿ Mercury</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">☉ ☌ ☿ Sun–Mercury</span><span class="chip">☉ ☌ ♀ Sun–Venus</span><span class="chip">☉ ☌ ♂ Sun–Mars</span><span class="chip">☿ ☌ ♀ Mercury–Venus</span><span class="chip">♀ ☌ ♂ Venus–Mars</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>O stellium de Sol, Mercúrio, Vênus e Marte em Capricórnio define o eixo central de identidade de Astolfo. Há uma seriedade natural, disciplina, ambição e capacidade de trabalhar duro por objetivos de longo prazo. A mente (Mercúrio) é estruturada, prática e estratégica; o modo de amar (Vênus) é comprometido e maduro; e a energia de ação (Marte) é persistente e determinada. Todos concentrados na Casa 8, essa força se orienta para transformação profunda, controle emocional e domínio sobre recursos compartilhados. É alguém que raramente se contenta com o superficial e busca poder pessoal através do autocontrole.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('visao-geral',true)">‹ anterior</button><button class="btn" type="button" onclick="show('tensao-emocional',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-tensao-emocional" data-section="tensao-emocional" data-planets="moon mercury venus mars jupiter" data-aspects="sun-moon moon-mercury moon-venus moon-mars moon-jupiter" data-houses="5">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">⚔️</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic aspect">☉☽</span></span>A Lua em Libra e o Conflito Interno</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">☿ Mercury</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">♃ Jupiter</span><span class="chip">☉ □ ☽ Sun–Moon</span><span class="chip">☽ □ ☿ Moon–Mercury</span><span class="chip">☽ □ ♀ Moon–Venus</span><span class="chip">☽ □ ♂ Moon–Mars</span><span class="chip">☽ □ ♃ Moon–Jupiter</span><span class="chip">⌂ Casa 5</span>
+  <div class="body"><p>A Lua em Libra na Casa 5 busca beleza, prazer, afeto e equilíbrio nos relacionamentos e na expressão criativa. Porém, ela forma quadratura com todo o stellium capricorniano e com Júpiter, criando uma tensão constante entre a necessidade emocional de leveza e harmonia e a pressão interna de dever, ambição e seriedade. Astolfo pode sentir que suas emoções entram em choque com suas responsabilidades, ou que precisa reprimir o desejo de diversão em nome de metas maiores. Aprender a validar as próprias necessidades afetivas, sem culpa, é um caminho importante de amadurecimento.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-capricorniana',true)">‹ anterior</button><button class="btn" type="button" onclick="show('amor-e-afeto',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-amor-e-afeto" data-section="amor-e-afeto" data-planets="moon venus saturn" data-aspects="moon-venus venus-mars venus-saturn" data-houses="5 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💞</span><span class="ic body">☽</span><span class="ic body">♀</span><span class="ic body">♄</span><span class="ic aspect">☽♀</span></span>O Amor entre o Prazer e o Compromisso</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">♀ Venus</span><span class="chip">♄ Saturn</span><span class="chip">☽ □ ♀ Moon–Venus</span><span class="chip">♀ ☌ ♂ Venus–Mars</span><span class="chip">♀ ⚹ ♄ Venus–Saturn</span><span class="chip">⌂ Casa 5</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>No amor, Astolfo vive uma dança entre a Lua em Libra, que anseia por romance, cortesia e conexão emocional, e Vênus em Capricórnio, que valoriza lealdade, estabilidade e seriedade. A quadratura entre elas indica que pode haver dificuldade em conciliar o desejo de idealização romântica com a tendência a ser reservado e cauteloso nos afetos. Vênus na Casa 8 aprofunda ainda mais a experiência amorosa: os vínculos tendem a ser intensos, transformadores e envolvem entrega total ou nada. O sextil de Vênus com Saturno favorece relações duradouras e construídas com maturidade e compromisso real.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('tensao-emocional',true)">‹ anterior</button><button class="btn" type="button" onclick="show('vocacao-e-saturno',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-vocacao-e-saturno" data-section="vocacao-e-saturno" data-planets="saturn jupiter" data-aspects="jupiter-saturn" data-houses="10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💼</span><span class="ic body">♄</span><span class="ic body">♃</span><span class="ic aspect">♃♄</span><span class="ic house">⌂</span></span>Vocação, Disciplina e Realização</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">♄ Saturn</span><span class="chip">♃ Jupiter</span><span class="chip">♃ △ ♄ Jupiter–Saturn</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>Saturno em Peixes na Casa 10, o único planeta angular do mapa, é um marcador vocacional forte. Ele indica um chamado para construir uma carreira com base em compaixão, sensibilidade, serviço ou dimensões espirituais e artísticas, mas exigindo paciência, estrutura e responsabilidade. O trígono de Saturno com Júpiter equilibra disciplina com fé e otimismo, oferecendo capacidade de crescer de forma sólida e sustentável ao longo do tempo. Astolfo tende a colher reconhecimento na maturidade, através de esforço consistente e de uma postura confiável diante do mundo.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('amor-e-afeto',true)">‹ anterior</button><button class="btn" type="button" onclick="show('expansao-versus-controle',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-expansao-versus-controle" data-section="expansao-versus-controle" data-planets="jupiter sun venus mars" data-aspects="sun-jupiter venus-jupiter mars-jupiter" data-houses="2 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🪙</span><span class="ic body">♃</span><span class="ic body">☉</span><span class="ic body">♀</span><span class="ic aspect">☉♃</span></span>Júpiter em Câncer e a Busca por Segurança</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">♃ Jupiter</span><span class="chip">☉ Sun</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">☉ ☍ ♃ Sun–Jupiter</span><span class="chip">♀ ☍ ♃ Venus–Jupiter</span><span class="chip">♂ ☍ ♃ Mars–Jupiter</span><span class="chip">⌂ Casa 2</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>Júpiter em Câncer na Casa 2 aponta para expansão através da segurança material e emocional, com potencial de prosperidade ligada à família, ao lar e ao cuidado. Contudo, oposto ao stellium capricorniano, cria um eixo de tensão entre o desejo de gastar, acolher e crescer generosamente (Júpiter) e a necessidade de controlar, poupar e disciplinar (Capricórnio na Casa 8). Esse jogo entre abundância e contenção, entre recursos próprios e recursos compartilhados, é um tema financeiro central. Encontrar equilíbrio entre generosidade e prudência traz estabilidade duradoura.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('vocacao-e-saturno',true)">‹ anterior</button><button class="btn" type="button" onclick="show('mente-e-comunicacao',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-mente-e-comunicacao" data-section="mente-e-comunicacao" data-planets="mercury moon jupiter" data-aspects="moon-mercury mercury-jupiter mercury-venus" data-houses="1 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">☽</span><span class="ic body">♃</span><span class="ic aspect">☽☿</span></span>Mente Prática e Comunicação</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☿ Mercury</span><span class="chip">☽ Moon</span><span class="chip">♃ Jupiter</span><span class="chip">☽ □ ☿ Moon–Mercury</span><span class="chip">☿ ☍ ♃ Mercury–Jupiter</span><span class="chip">☿ ☌ ♀ Mercury–Venus</span><span class="chip">⌂ Casa 1</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>Com Ascendente em Gêmeos e Mercúrio em Capricórnio na Casa 8, Astolfo combina agilidade mental e curiosidade com profundidade e foco. O pensamento é investigativo, gosta de ir ao fundo das questões, entender o que está oculto e lidar com temas tabu ou complexos. A quadratura de Mercúrio com a Lua pode gerar conflito entre razão e emoção, tornando difícil expressar sentimentos com clareza. Já a oposição a Júpiter amplia a mente com grandes ideias, mas pede cuidado para não alternar entre pessimismo excessivo e otimismo exagerado.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('expansao-versus-controle',true)">‹ anterior</button><button class="btn" type="button" onclick="show('caminho-de-crescimento',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-caminho-de-crescimento" data-section="caminho-de-crescimento" data-planets="saturn jupiter sun moon" data-aspects="jupiter-saturn sun-jupiter sun-moon" data-houses="8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌱</span><span class="ic body">♄</span><span class="ic body">♃</span><span class="ic body">☉</span><span class="ic aspect">♃♄</span></span>Transformação e Amadurecimento</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">♄ Saturn</span><span class="chip">♃ Jupiter</span><span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">♃ △ ♄ Jupiter–Saturn</span><span class="chip">☉ ☍ ♃ Sun–Jupiter</span><span class="chip">☉ □ ☽ Sun–Moon</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>O grande tema evolutivo de Astolfo é a transformação profunda, simbolizada pela concentração de planetas na Casa 8. A vida tende a apresentar ciclos de morte e renascimento simbólicos, exigindo capacidade de soltar o velho e regenerar-se. O trígono Júpiter-Saturno oferece um recurso valioso: a sabedoria de crescer com paciência e realismo. O caminho de crescimento passa por integrar o rigor capricorniano com a leveza da Lua em Libra, permitindo-se prazer e afeto sem abrir mão da seriedade. Ao equilibrar controle e expansão, Astolfo se torna alguém profundamente resiliente e realizador.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('mente-e-comunicacao',true)">‹ anterior</button></div>
+</article>
+<article class="detail" id="d-dados">
+  <div class="top">
+    <h3><span class="ics"><span class="ic general">📋</span></span>Dados do mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <table class="data">
+      <tr><td>Location</td><td>Belo Horizonte, Brazil (lat -19.9227, lon -43.9451)</td></tr>
+      <tr><td>Local time</td><td>2026-01-10 15:30:00 (America/Sao_Paulo)</td></tr>
+      <tr><td>UTC time</td><td>2026-01-10 18:30:00+00:00</td></tr>
+      <tr><td>Ascendant</td><td>Gemini 67.4°</td></tr>
+      <tr><td>Sun</td><td>Capricorn 290.5° (House8)</td></tr>
+      <tr><td>Moon</td><td>Libra 201.8° (House5)</td></tr>
+      <tr><td>Mercury</td><td>Capricorn 283.8° (House8)</td></tr>
+      <tr><td>Venus</td><td>Capricorn 291.5° (House8)</td></tr>
+      <tr><td>Mars</td><td>Capricorn 290.2° (House8)</td></tr>
+      <tr><td>Jupiter</td><td>Cancer 110.1° (House2)</td></tr>
+      <tr><td>Saturn</td><td>Pisces 356.8° (House10)</td></tr>
+      <tr><td>Aspects</td><td>Sun square Moon, Sun conjunction Mercury, Sun conjunction Venus, Sun conjunction Mars, Sun opposition Jupiter, Moon square Mercury, Moon square Venus, Moon square Mars, Moon square Jupiter, Mercury conjunction Venus, Mercury conjunction Mars, Mercury opposition Jupiter, Venus conjunction Mars, Venus opposition Jupiter, Venus sextile Saturn, Mars opposition Jupiter, Jupiter trine Saturn</td></tr>
+      <tr><td>Angular planets</td><td>Saturn</td></tr>
+  </table>
+</article>
+  </section>
+</div>
+<footer>Gerado por Birth Chart — Utility Hub</footer>
+</main>
+<script>
+function nav(id,replace){
+  // iOS Safari throws SecurityError on history.* from a file:// document —
+  // don't let it abort the scroll or the open/close it follows.
+  try{replace?history.replaceState({v:id},''):history.pushState({v:id},'');}catch(e){}
+}
+function show(id,replace){
+  document.getElementById('tiles').style.display='none';
+  document.body.classList.remove('wheel-open');
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.getElementById('d-'+id).classList.add('open');
+  nav(id,replace);
+  window.scrollTo(0,0);
+}
+function showWheel(){
+  document.getElementById('tiles').style.display='none';
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.add('wheel-open');
+  nav('wheel',false);
+  window.scrollTo(0,0);
+}
+function back(){
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.remove('wheel-open');
+  document.getElementById('tiles').style.display='';
+}
+window.addEventListener('popstate',()=>back());
+document.addEventListener('keydown',e=>{if(e.key==='Escape')back();});
+</script>
+</body>
+</html>
