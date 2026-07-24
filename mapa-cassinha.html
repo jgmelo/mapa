@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EFF3F2">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161B1B">
+<title>Mapa Astral de Cassinha Minha Fisio Querida</title>
+<style>
+:root{
+  /* Cool mineral theme: silver ground, blue/teal/green accents, matching
+     the wheel's slate-teal night ground. */
+  --bg:#EFF3F2;--surface:#FBFDFC;--ink:#1B2423;--muted:#5A6B69;--faint:#8AA09D;
+  --border:#D5DFDD;--border-strong:#AEC1BE;
+  --body-bg:#E2E9F8;--body-ink:#33508F;
+  --aspect-bg:#DDF0EA;--aspect-ink:#0C6A59;
+  --house-bg:#E4F1DC;--house-ink:#3F6B28;
+  --general-bg:#E9EEED;--general-ink:#4C5857;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161B1B;--surface:#1F2525;--ink:#E8EEEC;--muted:#9FAFAD;--faint:#71807E;
+    --border:#333C3B;--border-strong:#4E5B59;
+    /* The wheel goes very dark in night mode (its built-in palette is the
+       lighter slate-teal used in light mode). */
+    --wheel-bg:#121717;--wheel-line:#3D4846;
+    --wheel-fire:#2E2422;--wheel-earth:#242B20;--wheel-air:#202737;--wheel-water:#1A302D;
+  }
+}
+*{box-sizing:border-box;margin:0}
+body{
+  background:var(--bg);color:var(--ink);padding:30px 20px 60px;
+  font:15px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+main{max-width:1460px;margin:0 auto}
+header h1{font-size:1.55rem;font-weight:650}
+header .birth{color:var(--muted);margin-top:4px;font-size:.92rem}
+.layout{
+  display:grid;grid-template-columns:minmax(330px,440px) 1fr;
+  gap:24px;margin-top:22px;align-items:flex-start;
+}
+.wheel{
+  background:var(--wheel-bg,#26302F);border:1px solid var(--border);
+  border-radius:14px;padding:6px;position:sticky;top:20px;
+}
+.wheel svg{width:100%;height:auto;display:block}
+.wheel .wheelbar{display:none}
+.reading{min-width:0}
+.hint{color:var(--faint);font-size:.8rem;margin-bottom:10px}
+.pagesep{
+  display:flex;align-items:center;gap:18px;margin:18px 0 2px;
+  color:var(--faint);font-size:16px;letter-spacing:4px;
+}
+.pagesep::before,.pagesep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.pagesep.foot{margin:32px 0 0;font-size:12px;letter-spacing:9px}
+.groupsep{
+  display:flex;align-items:center;gap:14px;margin:14px 0;
+  color:var(--faint);font-size:13px;
+}
+.groupsep::before,.groupsep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.tiles{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));
+  gap:14px;grid-auto-flow:dense;
+}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tile{
+  aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px;text-align:left;font:inherit;color:inherit;cursor:pointer;
+  display:flex;flex-direction:column;overflow:hidden;animation:rise .4s both;
+  transition:transform .08s;
+}
+.tile:hover{border-color:var(--border-strong);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.tile:active{transform:scale(.96)}
+.detail h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.tile h3{
+  margin-top:auto;font-size:19px;font-weight:650;line-height:1.25;
+  overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;
+}
+.tile .face{display:none}
+.face .frule{width:26px;border-top:1px solid var(--border-strong)}
+.wheel-tile{display:none;grid-column:span 2;grid-row:span 2}
+.databar{
+  aspect-ratio:auto;flex-direction:row;align-items:center;gap:10px;
+  min-height:0;padding:12px 16px;width:100%;
+}
+.databar .dg{font-size:17px;flex:none}
+.databar .dl{font-weight:600;font-size:13.5px}
+.databar .dch{margin-left:auto;color:var(--faint)}
+.ics{display:flex;gap:6px;flex:none;flex-wrap:wrap}
+.ic{
+  width:26px;height:26px;border-radius:8px;flex:none;font-size:15px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.ic.theme{background:var(--general-bg)}
+.ic.body{background:var(--body-bg);color:var(--body-ink)}
+.ic.aspect{background:var(--aspect-bg);color:var(--aspect-ink);font-size:12px;letter-spacing:1px}
+.ic.house{background:var(--house-bg);color:var(--house-ink)}
+.ic.general{background:var(--general-bg);color:var(--general-ink)}
+.detail{
+  display:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px 18px;
+}
+.detail.open{display:block;animation:rise .25s both}
+.detail .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.btn{
+  font:inherit;font-size:.8rem;padding:3px 12px;cursor:pointer;flex:none;
+  background:var(--bg);border:1px solid var(--border);border-radius:999px;color:var(--muted);
+}
+.btn:hover{border-color:var(--border-strong);color:var(--ink)}
+.detail .top .btn{margin-left:auto}
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:2px 9px;
+  margin:2px 4px 2px 0;color:var(--muted);
+}
+.detail .body{margin-top:10px}
+.detail .body p{margin:0 0 10px}
+.sep{
+  display:flex;align-items:center;gap:14px;margin:16px 0;
+  color:var(--faint);font-size:15px;letter-spacing:4px;
+}
+.sep::before,.sep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+table.data td{padding:5px 8px;border-top:1px solid var(--border);vertical-align:top}
+table.data td:first-child{color:var(--muted);white-space:nowrap;width:34%}
+footer{margin-top:32px;color:var(--faint);font-size:.78rem;text-align:center}
+@media (max-width:940px){
+  body{padding:18px 12px 44px}
+  header h1{font-size:1.15rem}
+  header .birth{font-size:.8rem}
+  .layout{grid-template-columns:1fr;gap:14px;margin-top:14px}
+  .wheel{display:none;position:static}
+  body.wheel-open .wheel{display:block}
+  body.wheel-open .hint{display:none}
+  .wheel .wheelbar{display:flex;align-items:center;gap:10px;padding:4px 8px 10px}
+  .wheel .wheelbar h3{font-size:15px;color:#EFF4F1}
+  .wheel .wheelbar .btn{
+    margin-left:auto;background:transparent;color:#CFDAD6;border-color:#4F5C5A;
+  }
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+  .tile{padding:10px;border-radius:12px}
+  .tile h3,.tile .ics{display:none}
+  .tile .face{
+    display:flex;flex:1;flex-direction:column;align-items:center;
+    justify-content:center;gap:7px;
+  }
+  .fglyph{font-size:34px;line-height:1}
+  .flabel{font-size:11px;color:var(--muted);text-align:center}
+  .wheel-tile{display:flex;padding:7px;gap:4px}
+  .wheel-tile .mini{flex:1;min-height:0}
+  .wheel-tile .mini svg{width:100%;height:100%;display:block}
+  .wheel-tile .flabel{flex:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+@media print{.hint,.btn,.nav{display:none}.tile{aspect-ratio:auto}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Mapa Astral de Cassinha Minha Fisio Querida</h1>
+  <p class="birth">Belo Horizonte, Brazil — 30/06/1983 03:55 (America/Sao_Paulo)</p>
+</header>
+<div class="pagesep" aria-hidden="true">♋ · ♊</div>
+<div class="layout">
+  <section class="wheel" aria-label="Roda do mapa astral">
+    <div class="wheelbar"><h3>Mapa</h3>
+      <button class="btn" type="button" onclick="back()">‹ Voltar</button></div>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 273.76 76.66 A 480.00 480.00 0 0 0 92.40 246.50 L 146.75 280.30 A 416.00 416.00 0 0 1 303.93 133.11 Z"/>
+<text class="sign-glyph" x="193.8" y="173.0">♈</text>
+<path class="sign sign-taurus element-earth" d="M 92.40 246.50 A 480.00 480.00 0 0 0 20.26 484.26 L 84.22 486.36 A 416.00 416.00 0 0 1 146.75 280.30 Z"/>
+<text class="sign-glyph" x="71.3" y="369.9">♉</text>
+<path class="sign sign-gemini element-air" d="M 20.26 484.26 A 480.00 480.00 0 0 0 76.66 726.24 L 133.11 696.07 A 416.00 416.00 0 0 1 84.22 486.36 Z"/>
+<text class="sign-glyph" x="63.7" y="601.7">♊</text>
+<path class="sign sign-cancer element-water" d="M 76.66 726.24 A 480.00 480.00 0 0 0 246.50 907.60 L 280.30 853.25 A 416.00 416.00 0 0 1 133.11 696.07 Z"/>
+<text class="sign-glyph" x="173.0" y="806.2">♋</text>
+<path class="sign sign-leo element-fire" d="M 246.50 907.60 A 480.00 480.00 0 0 0 484.26 979.74 L 486.36 915.78 A 416.00 416.00 0 0 1 280.30 853.25 Z"/>
+<text class="sign-glyph" x="369.9" y="928.7">♌</text>
+<path class="sign sign-virgo element-earth" d="M 484.26 979.74 A 480.00 480.00 0 0 0 726.24 923.34 L 696.07 866.89 A 416.00 416.00 0 0 1 486.36 915.78 Z"/>
+<text class="sign-glyph" x="601.7" y="936.3">♍</text>
+<path class="sign sign-libra element-air" d="M 726.24 923.34 A 480.00 480.00 0 0 0 907.60 753.50 L 853.25 719.70 A 416.00 416.00 0 0 1 696.07 866.89 Z"/>
+<text class="sign-glyph" x="806.2" y="827.0">♎</text>
+<path class="sign sign-scorpio element-water" d="M 907.60 753.50 A 480.00 480.00 0 0 0 979.74 515.74 L 915.78 513.64 A 416.00 416.00 0 0 1 853.25 719.70 Z"/>
+<text class="sign-glyph" x="928.7" y="630.1">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 979.74 515.74 A 480.00 480.00 0 0 0 923.34 273.76 L 866.89 303.93 A 416.00 416.00 0 0 1 915.78 513.64 Z"/>
+<text class="sign-glyph" x="936.3" y="398.3">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 923.34 273.76 A 480.00 480.00 0 0 0 753.50 92.40 L 719.70 146.75 A 416.00 416.00 0 0 1 866.89 303.93 Z"/>
+<text class="sign-glyph" x="827.0" y="193.8">♑</text>
+<path class="sign sign-aquarius element-air" d="M 753.50 92.40 A 480.00 480.00 0 0 0 515.74 20.26 L 513.64 84.22 A 416.00 416.00 0 0 1 719.70 146.75 Z"/>
+<text class="sign-glyph" x="630.1" y="71.3">♒</text>
+<path class="sign sign-pisces element-water" d="M 515.74 20.26 A 480.00 480.00 0 0 0 273.76 76.66 L 303.93 133.11 A 416.00 416.00 0 0 1 513.64 84.22 Z"/>
+<text class="sign-glyph" x="398.3" y="63.7">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="309.6" y1="143.7" x2="303.9" y2="133.1"/>
+<line class="tick" x1="276.5" y1="157.5" x2="272.7" y2="151.6"/>
+<line class="tick major" x1="250.6" y1="182.2" x2="243.2" y2="172.7"/>
+<line class="tick" x1="220.4" y1="201.5" x2="215.6" y2="196.4"/>
+<line class="tick major" x1="199.2" y1="230.3" x2="190.3" y2="222.3"/>
+<line class="tick" x1="172.8" y1="254.5" x2="167.2" y2="250.3"/>
+<line class="tick major" x1="156.9" y1="286.6" x2="146.7" y2="280.3"/>
+<line class="tick" x1="135.2" y1="315.1" x2="128.9" y2="311.9"/>
+<line class="tick major" x1="125.1" y1="349.4" x2="114.0" y2="345.0"/>
+<line class="tick" x1="108.6" y1="381.2" x2="101.9" y2="379.2"/>
+<line class="tick major" x1="104.7" y1="416.8" x2="92.9" y2="414.4"/>
+<line class="tick" x1="93.9" y1="451.0" x2="87.0" y2="450.2"/>
+<line class="tick major" x1="96.2" y1="486.7" x2="84.2" y2="486.4"/>
+<line class="tick" x1="91.6" y1="522.3" x2="84.6" y2="522.6"/>
+<line class="tick major" x1="100.1" y1="557.1" x2="88.2" y2="558.8"/>
+<line class="tick" x1="101.7" y1="592.8" x2="94.9" y2="594.4"/>
+<line class="tick major" x1="116.0" y1="625.7" x2="104.6" y2="629.4"/>
+<line class="tick" x1="123.9" y1="660.6" x2="117.4" y2="663.3"/>
+<line class="tick major" x1="143.7" y1="690.4" x2="133.1" y2="696.1"/>
+<line class="tick" x1="157.5" y1="723.5" x2="151.6" y2="727.3"/>
+<line class="tick major" x1="182.2" y1="749.4" x2="172.7" y2="756.8"/>
+<line class="tick" x1="201.5" y1="779.6" x2="196.4" y2="784.4"/>
+<line class="tick major" x1="230.3" y1="800.8" x2="222.3" y2="809.7"/>
+<line class="tick" x1="254.5" y1="827.2" x2="250.3" y2="832.8"/>
+<line class="tick major" x1="286.6" y1="843.1" x2="280.3" y2="853.3"/>
+<line class="tick" x1="315.1" y1="864.8" x2="311.9" y2="871.1"/>
+<line class="tick major" x1="349.4" y1="874.9" x2="345.0" y2="886.0"/>
+<line class="tick" x1="381.2" y1="891.4" x2="379.2" y2="898.1"/>
+<line class="tick major" x1="416.8" y1="895.3" x2="414.4" y2="907.1"/>
+<line class="tick" x1="451.0" y1="906.1" x2="450.2" y2="913.0"/>
+<line class="tick major" x1="486.7" y1="903.8" x2="486.4" y2="915.8"/>
+<line class="tick" x1="522.3" y1="908.4" x2="522.6" y2="915.4"/>
+<line class="tick major" x1="557.1" y1="899.9" x2="558.8" y2="911.8"/>
+<line class="tick" x1="592.8" y1="898.3" x2="594.4" y2="905.1"/>
+<line class="tick major" x1="625.7" y1="884.0" x2="629.4" y2="895.4"/>
+<line class="tick" x1="660.6" y1="876.1" x2="663.3" y2="882.6"/>
+<line class="tick major" x1="690.4" y1="856.3" x2="696.1" y2="866.9"/>
+<line class="tick" x1="723.5" y1="842.5" x2="727.3" y2="848.4"/>
+<line class="tick major" x1="749.4" y1="817.8" x2="756.8" y2="827.3"/>
+<line class="tick" x1="779.6" y1="798.5" x2="784.4" y2="803.6"/>
+<line class="tick major" x1="800.8" y1="769.7" x2="809.7" y2="777.7"/>
+<line class="tick" x1="827.2" y1="745.5" x2="832.8" y2="749.7"/>
+<line class="tick major" x1="843.1" y1="713.4" x2="853.3" y2="719.7"/>
+<line class="tick" x1="864.8" y1="684.9" x2="871.1" y2="688.1"/>
+<line class="tick major" x1="874.9" y1="650.6" x2="886.0" y2="655.0"/>
+<line class="tick" x1="891.4" y1="618.8" x2="898.1" y2="620.8"/>
+<line class="tick major" x1="895.3" y1="583.2" x2="907.1" y2="585.6"/>
+<line class="tick" x1="906.1" y1="549.0" x2="913.0" y2="549.8"/>
+<line class="tick major" x1="903.8" y1="513.3" x2="915.8" y2="513.6"/>
+<line class="tick" x1="908.4" y1="477.7" x2="915.4" y2="477.4"/>
+<line class="tick major" x1="899.9" y1="442.9" x2="911.8" y2="441.2"/>
+<line class="tick" x1="898.3" y1="407.2" x2="905.1" y2="405.6"/>
+<line class="tick major" x1="884.0" y1="374.3" x2="895.4" y2="370.6"/>
+<line class="tick" x1="876.1" y1="339.4" x2="882.6" y2="336.7"/>
+<line class="tick major" x1="856.3" y1="309.6" x2="866.9" y2="303.9"/>
+<line class="tick" x1="842.5" y1="276.5" x2="848.4" y2="272.7"/>
+<line class="tick major" x1="817.8" y1="250.6" x2="827.3" y2="243.2"/>
+<line class="tick" x1="798.5" y1="220.4" x2="803.6" y2="215.6"/>
+<line class="tick major" x1="769.7" y1="199.2" x2="777.7" y2="190.3"/>
+<line class="tick" x1="745.5" y1="172.8" x2="749.7" y2="167.2"/>
+<line class="tick major" x1="713.4" y1="156.9" x2="719.7" y2="146.7"/>
+<line class="tick" x1="684.9" y1="135.2" x2="688.1" y2="128.9"/>
+<line class="tick major" x1="650.6" y1="125.1" x2="655.0" y2="114.0"/>
+<line class="tick" x1="618.8" y1="108.6" x2="620.8" y2="101.9"/>
+<line class="tick major" x1="583.2" y1="104.7" x2="585.6" y2="92.9"/>
+<line class="tick" x1="549.0" y1="93.9" x2="549.8" y2="87.0"/>
+<line class="tick major" x1="513.3" y1="96.2" x2="513.6" y2="84.2"/>
+<line class="tick" x1="477.7" y1="91.6" x2="477.4" y2="84.6"/>
+<line class="tick major" x1="442.9" y1="100.1" x2="441.2" y2="88.2"/>
+<line class="tick" x1="407.2" y1="101.7" x2="405.6" y2="94.9"/>
+<line class="tick major" x1="374.3" y1="116.0" x2="370.6" y2="104.6"/>
+<line class="tick" x1="339.4" y1="123.9" x2="336.7" y2="117.4"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="293.0" y1="617.4" x2="138.1" y2="705.2"/>
+<line class="cusp house-3" x1="384.5" y1="708.1" x2="298.0" y2="863.7"/>
+<line class="cusp house-4 axis" x1="516.2" y1="737.4" x2="528.4" y2="915.0"/>
+<text class="axis-label" x="533.7" y="992.8">IC</text>
+<line class="cusp house-5" x1="639.8" y1="692.6" x2="744.3" y2="836.7"/>
+<line class="cusp house-6" x1="715.1" y1="601.9" x2="876.0" y2="678.1"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="707.0" y1="382.6" x2="861.9" y2="294.8"/>
+<line class="cusp house-9" x1="615.5" y1="291.9" x2="702.0" y2="136.3"/>
+<line class="cusp house-10 axis" x1="483.8" y1="262.6" x2="471.6" y2="85.0"/>
+<text class="axis-label" x="466.3" y="7.2">MC</text>
+<line class="cusp house-11" x1="360.2" y1="307.4" x2="255.7" y2="163.3"/>
+<line class="cusp house-12" x1="284.9" y1="398.1" x2="124.0" y2="321.9"/>
+<text class="house-number" x="244.7" y="567.3">1</text>
+<text class="house-number" x="314.2" y="687.5">2</text>
+<text class="house-number" x="442.6" y="757.7">3</text>
+<text class="house-number" x="590.0" y="748.2">4</text>
+<text class="house-number" x="703.2" y="668.6">5</text>
+<text class="house-number" x="757.6" y="557.9">6</text>
+<text class="house-number" x="755.3" y="432.7">7</text>
+<text class="house-number" x="685.8" y="312.5">8</text>
+<text class="house-number" x="557.4" y="242.3">9</text>
+<text class="house-number" x="410.0" y="251.8">10</text>
+<text class="house-number" x="296.8" y="331.4">11</text>
+<text class="house-number" x="242.4" y="442.1">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-trine" x1="307.6" y1="640.1" x2="499.5" y2="262.0"/>
+<path class="aspect aspect-sun-mars aspect-conjunction" d="M 286.17 617.53 A 244.00 244.00 0 0 0 302.74 643.62"/>
+<line class="aspect aspect-moon-mercury aspect-trine" x1="499.5" y1="262.0" x2="284.3" y2="600.6"/>
+<line class="aspect aspect-moon-mars aspect-trine" x1="499.5" y1="262.0" x2="291.4" y2="614.6"/>
+<line class="aspect aspect-moon-jupiter aspect-square" x1="499.5" y1="262.0" x2="738.0" y2="498.2"/>
+<line class="aspect aspect-moon-saturn aspect-trine" x1="499.5" y1="262.0" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-mercury-venus aspect-sextile" x1="284.3" y1="600.6" x2="461.1" y2="734.8"/>
+<path class="aspect aspect-mercury-mars aspect-conjunction" d="M 278.85 603.09 A 244.00 244.00 0 0 0 286.17 617.53"/>
+<line class="aspect aspect-mercury-saturn aspect-trine" x1="284.3" y1="600.6" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-venus-saturn aspect-sextile" x1="461.1" y1="734.8" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-mars-saturn aspect-trine" x1="291.4" y1="614.6" x2="696.9" y2="633.6"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="269.8" y1="686.1" x2="307.6" y2="640.1"/><circle class="anchor" cx="307.6" cy="640.1" r="4"/><text class="planet-glyph" x="226.2" y="721.3">☉</text><text class="degree" x="252.7" y="699.9">7°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="499.3" y1="204.0" x2="499.5" y2="262.0"/><circle class="anchor" cx="499.5" cy="262.0" r="4"/><text class="planet-glyph" x="499.2" y="148.0">☽</text><text class="degree" x="499.3" y="182.0">2°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="223.6" y1="605.8" x2="284.3" y2="600.6"/><circle class="anchor" cx="284.3" cy="600.6" r="4"/><text class="planet-glyph" x="171.3" y="625.8">☿</text><text class="degree" x="203.0" y="613.7">26°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="451.7" y1="792.0" x2="461.1" y2="734.8"/><circle class="anchor" cx="461.1" cy="734.8" r="4"/><text class="planet-glyph" x="442.5" y="847.3">♀</text><text class="degree" x="448.1" y="813.7">22°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="243.5" y1="647.8" x2="291.4" y2="614.6"/><circle class="anchor" cx="291.4" cy="614.6" r="4"/><text class="planet-glyph" x="195.0" y="675.7">♂</text><text class="degree" x="224.5" y="658.8">0°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="796.0" y1="497.7" x2="738.0" y2="498.2"/><circle class="anchor" cx="738.0" cy="498.2" r="4"/><text class="planet-glyph" x="852.0" y="497.3">♃</text><text class="degree" x="818.0" y="497.6">2°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="744.9" y1="666.2" x2="696.9" y2="633.6"/><circle class="anchor" cx="696.9" cy="633.6" r="4"/><text class="planet-glyph" x="791.3" y="697.6">♄</text><text class="degree" x="763.1" y="678.5">27°</text></g>
+</g>
+<text class="caption" x="24" y="978">Cassinha Minha Fisio Querida — 30/06/1983 03:55, Belo Horizonte</text>
+</svg>
+  </section>
+  <section class="reading" aria-label="Interpretação">
+    <p class="hint">Toque em um tema para ler — Voltar ou Esc retorna.</p>
+    <div id="tiles">
+      <div class="tiles">
+<button class="tile wheel-tile" type="button" onclick="showWheel()" style="animation-delay:0ms" aria-label="Abrir o mapa">
+  <span class="mini"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 273.76 76.66 A 480.00 480.00 0 0 0 92.40 246.50 L 146.75 280.30 A 416.00 416.00 0 0 1 303.93 133.11 Z"/>
+<text class="sign-glyph" x="193.8" y="173.0">♈</text>
+<path class="sign sign-taurus element-earth" d="M 92.40 246.50 A 480.00 480.00 0 0 0 20.26 484.26 L 84.22 486.36 A 416.00 416.00 0 0 1 146.75 280.30 Z"/>
+<text class="sign-glyph" x="71.3" y="369.9">♉</text>
+<path class="sign sign-gemini element-air" d="M 20.26 484.26 A 480.00 480.00 0 0 0 76.66 726.24 L 133.11 696.07 A 416.00 416.00 0 0 1 84.22 486.36 Z"/>
+<text class="sign-glyph" x="63.7" y="601.7">♊</text>
+<path class="sign sign-cancer element-water" d="M 76.66 726.24 A 480.00 480.00 0 0 0 246.50 907.60 L 280.30 853.25 A 416.00 416.00 0 0 1 133.11 696.07 Z"/>
+<text class="sign-glyph" x="173.0" y="806.2">♋</text>
+<path class="sign sign-leo element-fire" d="M 246.50 907.60 A 480.00 480.00 0 0 0 484.26 979.74 L 486.36 915.78 A 416.00 416.00 0 0 1 280.30 853.25 Z"/>
+<text class="sign-glyph" x="369.9" y="928.7">♌</text>
+<path class="sign sign-virgo element-earth" d="M 484.26 979.74 A 480.00 480.00 0 0 0 726.24 923.34 L 696.07 866.89 A 416.00 416.00 0 0 1 486.36 915.78 Z"/>
+<text class="sign-glyph" x="601.7" y="936.3">♍</text>
+<path class="sign sign-libra element-air" d="M 726.24 923.34 A 480.00 480.00 0 0 0 907.60 753.50 L 853.25 719.70 A 416.00 416.00 0 0 1 696.07 866.89 Z"/>
+<text class="sign-glyph" x="806.2" y="827.0">♎</text>
+<path class="sign sign-scorpio element-water" d="M 907.60 753.50 A 480.00 480.00 0 0 0 979.74 515.74 L 915.78 513.64 A 416.00 416.00 0 0 1 853.25 719.70 Z"/>
+<text class="sign-glyph" x="928.7" y="630.1">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 979.74 515.74 A 480.00 480.00 0 0 0 923.34 273.76 L 866.89 303.93 A 416.00 416.00 0 0 1 915.78 513.64 Z"/>
+<text class="sign-glyph" x="936.3" y="398.3">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 923.34 273.76 A 480.00 480.00 0 0 0 753.50 92.40 L 719.70 146.75 A 416.00 416.00 0 0 1 866.89 303.93 Z"/>
+<text class="sign-glyph" x="827.0" y="193.8">♑</text>
+<path class="sign sign-aquarius element-air" d="M 753.50 92.40 A 480.00 480.00 0 0 0 515.74 20.26 L 513.64 84.22 A 416.00 416.00 0 0 1 719.70 146.75 Z"/>
+<text class="sign-glyph" x="630.1" y="71.3">♒</text>
+<path class="sign sign-pisces element-water" d="M 515.74 20.26 A 480.00 480.00 0 0 0 273.76 76.66 L 303.93 133.11 A 416.00 416.00 0 0 1 513.64 84.22 Z"/>
+<text class="sign-glyph" x="398.3" y="63.7">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="309.6" y1="143.7" x2="303.9" y2="133.1"/>
+<line class="tick" x1="276.5" y1="157.5" x2="272.7" y2="151.6"/>
+<line class="tick major" x1="250.6" y1="182.2" x2="243.2" y2="172.7"/>
+<line class="tick" x1="220.4" y1="201.5" x2="215.6" y2="196.4"/>
+<line class="tick major" x1="199.2" y1="230.3" x2="190.3" y2="222.3"/>
+<line class="tick" x1="172.8" y1="254.5" x2="167.2" y2="250.3"/>
+<line class="tick major" x1="156.9" y1="286.6" x2="146.7" y2="280.3"/>
+<line class="tick" x1="135.2" y1="315.1" x2="128.9" y2="311.9"/>
+<line class="tick major" x1="125.1" y1="349.4" x2="114.0" y2="345.0"/>
+<line class="tick" x1="108.6" y1="381.2" x2="101.9" y2="379.2"/>
+<line class="tick major" x1="104.7" y1="416.8" x2="92.9" y2="414.4"/>
+<line class="tick" x1="93.9" y1="451.0" x2="87.0" y2="450.2"/>
+<line class="tick major" x1="96.2" y1="486.7" x2="84.2" y2="486.4"/>
+<line class="tick" x1="91.6" y1="522.3" x2="84.6" y2="522.6"/>
+<line class="tick major" x1="100.1" y1="557.1" x2="88.2" y2="558.8"/>
+<line class="tick" x1="101.7" y1="592.8" x2="94.9" y2="594.4"/>
+<line class="tick major" x1="116.0" y1="625.7" x2="104.6" y2="629.4"/>
+<line class="tick" x1="123.9" y1="660.6" x2="117.4" y2="663.3"/>
+<line class="tick major" x1="143.7" y1="690.4" x2="133.1" y2="696.1"/>
+<line class="tick" x1="157.5" y1="723.5" x2="151.6" y2="727.3"/>
+<line class="tick major" x1="182.2" y1="749.4" x2="172.7" y2="756.8"/>
+<line class="tick" x1="201.5" y1="779.6" x2="196.4" y2="784.4"/>
+<line class="tick major" x1="230.3" y1="800.8" x2="222.3" y2="809.7"/>
+<line class="tick" x1="254.5" y1="827.2" x2="250.3" y2="832.8"/>
+<line class="tick major" x1="286.6" y1="843.1" x2="280.3" y2="853.3"/>
+<line class="tick" x1="315.1" y1="864.8" x2="311.9" y2="871.1"/>
+<line class="tick major" x1="349.4" y1="874.9" x2="345.0" y2="886.0"/>
+<line class="tick" x1="381.2" y1="891.4" x2="379.2" y2="898.1"/>
+<line class="tick major" x1="416.8" y1="895.3" x2="414.4" y2="907.1"/>
+<line class="tick" x1="451.0" y1="906.1" x2="450.2" y2="913.0"/>
+<line class="tick major" x1="486.7" y1="903.8" x2="486.4" y2="915.8"/>
+<line class="tick" x1="522.3" y1="908.4" x2="522.6" y2="915.4"/>
+<line class="tick major" x1="557.1" y1="899.9" x2="558.8" y2="911.8"/>
+<line class="tick" x1="592.8" y1="898.3" x2="594.4" y2="905.1"/>
+<line class="tick major" x1="625.7" y1="884.0" x2="629.4" y2="895.4"/>
+<line class="tick" x1="660.6" y1="876.1" x2="663.3" y2="882.6"/>
+<line class="tick major" x1="690.4" y1="856.3" x2="696.1" y2="866.9"/>
+<line class="tick" x1="723.5" y1="842.5" x2="727.3" y2="848.4"/>
+<line class="tick major" x1="749.4" y1="817.8" x2="756.8" y2="827.3"/>
+<line class="tick" x1="779.6" y1="798.5" x2="784.4" y2="803.6"/>
+<line class="tick major" x1="800.8" y1="769.7" x2="809.7" y2="777.7"/>
+<line class="tick" x1="827.2" y1="745.5" x2="832.8" y2="749.7"/>
+<line class="tick major" x1="843.1" y1="713.4" x2="853.3" y2="719.7"/>
+<line class="tick" x1="864.8" y1="684.9" x2="871.1" y2="688.1"/>
+<line class="tick major" x1="874.9" y1="650.6" x2="886.0" y2="655.0"/>
+<line class="tick" x1="891.4" y1="618.8" x2="898.1" y2="620.8"/>
+<line class="tick major" x1="895.3" y1="583.2" x2="907.1" y2="585.6"/>
+<line class="tick" x1="906.1" y1="549.0" x2="913.0" y2="549.8"/>
+<line class="tick major" x1="903.8" y1="513.3" x2="915.8" y2="513.6"/>
+<line class="tick" x1="908.4" y1="477.7" x2="915.4" y2="477.4"/>
+<line class="tick major" x1="899.9" y1="442.9" x2="911.8" y2="441.2"/>
+<line class="tick" x1="898.3" y1="407.2" x2="905.1" y2="405.6"/>
+<line class="tick major" x1="884.0" y1="374.3" x2="895.4" y2="370.6"/>
+<line class="tick" x1="876.1" y1="339.4" x2="882.6" y2="336.7"/>
+<line class="tick major" x1="856.3" y1="309.6" x2="866.9" y2="303.9"/>
+<line class="tick" x1="842.5" y1="276.5" x2="848.4" y2="272.7"/>
+<line class="tick major" x1="817.8" y1="250.6" x2="827.3" y2="243.2"/>
+<line class="tick" x1="798.5" y1="220.4" x2="803.6" y2="215.6"/>
+<line class="tick major" x1="769.7" y1="199.2" x2="777.7" y2="190.3"/>
+<line class="tick" x1="745.5" y1="172.8" x2="749.7" y2="167.2"/>
+<line class="tick major" x1="713.4" y1="156.9" x2="719.7" y2="146.7"/>
+<line class="tick" x1="684.9" y1="135.2" x2="688.1" y2="128.9"/>
+<line class="tick major" x1="650.6" y1="125.1" x2="655.0" y2="114.0"/>
+<line class="tick" x1="618.8" y1="108.6" x2="620.8" y2="101.9"/>
+<line class="tick major" x1="583.2" y1="104.7" x2="585.6" y2="92.9"/>
+<line class="tick" x1="549.0" y1="93.9" x2="549.8" y2="87.0"/>
+<line class="tick major" x1="513.3" y1="96.2" x2="513.6" y2="84.2"/>
+<line class="tick" x1="477.7" y1="91.6" x2="477.4" y2="84.6"/>
+<line class="tick major" x1="442.9" y1="100.1" x2="441.2" y2="88.2"/>
+<line class="tick" x1="407.2" y1="101.7" x2="405.6" y2="94.9"/>
+<line class="tick major" x1="374.3" y1="116.0" x2="370.6" y2="104.6"/>
+<line class="tick" x1="339.4" y1="123.9" x2="336.7" y2="117.4"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="293.0" y1="617.4" x2="138.1" y2="705.2"/>
+<line class="cusp house-3" x1="384.5" y1="708.1" x2="298.0" y2="863.7"/>
+<line class="cusp house-4 axis" x1="516.2" y1="737.4" x2="528.4" y2="915.0"/>
+<text class="axis-label" x="533.7" y="992.8">IC</text>
+<line class="cusp house-5" x1="639.8" y1="692.6" x2="744.3" y2="836.7"/>
+<line class="cusp house-6" x1="715.1" y1="601.9" x2="876.0" y2="678.1"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="707.0" y1="382.6" x2="861.9" y2="294.8"/>
+<line class="cusp house-9" x1="615.5" y1="291.9" x2="702.0" y2="136.3"/>
+<line class="cusp house-10 axis" x1="483.8" y1="262.6" x2="471.6" y2="85.0"/>
+<text class="axis-label" x="466.3" y="7.2">MC</text>
+<line class="cusp house-11" x1="360.2" y1="307.4" x2="255.7" y2="163.3"/>
+<line class="cusp house-12" x1="284.9" y1="398.1" x2="124.0" y2="321.9"/>
+<text class="house-number" x="244.7" y="567.3">1</text>
+<text class="house-number" x="314.2" y="687.5">2</text>
+<text class="house-number" x="442.6" y="757.7">3</text>
+<text class="house-number" x="590.0" y="748.2">4</text>
+<text class="house-number" x="703.2" y="668.6">5</text>
+<text class="house-number" x="757.6" y="557.9">6</text>
+<text class="house-number" x="755.3" y="432.7">7</text>
+<text class="house-number" x="685.8" y="312.5">8</text>
+<text class="house-number" x="557.4" y="242.3">9</text>
+<text class="house-number" x="410.0" y="251.8">10</text>
+<text class="house-number" x="296.8" y="331.4">11</text>
+<text class="house-number" x="242.4" y="442.1">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-trine" x1="307.6" y1="640.1" x2="499.5" y2="262.0"/>
+<path class="aspect aspect-sun-mars aspect-conjunction" d="M 286.17 617.53 A 244.00 244.00 0 0 0 302.74 643.62"/>
+<line class="aspect aspect-moon-mercury aspect-trine" x1="499.5" y1="262.0" x2="284.3" y2="600.6"/>
+<line class="aspect aspect-moon-mars aspect-trine" x1="499.5" y1="262.0" x2="291.4" y2="614.6"/>
+<line class="aspect aspect-moon-jupiter aspect-square" x1="499.5" y1="262.0" x2="738.0" y2="498.2"/>
+<line class="aspect aspect-moon-saturn aspect-trine" x1="499.5" y1="262.0" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-mercury-venus aspect-sextile" x1="284.3" y1="600.6" x2="461.1" y2="734.8"/>
+<path class="aspect aspect-mercury-mars aspect-conjunction" d="M 278.85 603.09 A 244.00 244.00 0 0 0 286.17 617.53"/>
+<line class="aspect aspect-mercury-saturn aspect-trine" x1="284.3" y1="600.6" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-venus-saturn aspect-sextile" x1="461.1" y1="734.8" x2="696.9" y2="633.6"/>
+<line class="aspect aspect-mars-saturn aspect-trine" x1="291.4" y1="614.6" x2="696.9" y2="633.6"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="269.8" y1="686.1" x2="307.6" y2="640.1"/><circle class="anchor" cx="307.6" cy="640.1" r="4"/><text class="planet-glyph" x="226.2" y="721.3">☉</text><text class="degree" x="252.7" y="699.9">7°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="499.3" y1="204.0" x2="499.5" y2="262.0"/><circle class="anchor" cx="499.5" cy="262.0" r="4"/><text class="planet-glyph" x="499.2" y="148.0">☽</text><text class="degree" x="499.3" y="182.0">2°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="223.6" y1="605.8" x2="284.3" y2="600.6"/><circle class="anchor" cx="284.3" cy="600.6" r="4"/><text class="planet-glyph" x="171.3" y="625.8">☿</text><text class="degree" x="203.0" y="613.7">26°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="451.7" y1="792.0" x2="461.1" y2="734.8"/><circle class="anchor" cx="461.1" cy="734.8" r="4"/><text class="planet-glyph" x="442.5" y="847.3">♀</text><text class="degree" x="448.1" y="813.7">22°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="243.5" y1="647.8" x2="291.4" y2="614.6"/><circle class="anchor" cx="291.4" cy="614.6" r="4"/><text class="planet-glyph" x="195.0" y="675.7">♂</text><text class="degree" x="224.5" y="658.8">0°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="796.0" y1="497.7" x2="738.0" y2="498.2"/><circle class="anchor" cx="738.0" cy="498.2" r="4"/><text class="planet-glyph" x="852.0" y="497.3">♃</text><text class="degree" x="818.0" y="497.6">2°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="744.9" y1="666.2" x2="696.9" y2="633.6"/><circle class="anchor" cx="696.9" cy="633.6" r="4"/><text class="planet-glyph" x="791.3" y="697.6">♄</text><text class="degree" x="763.1" y="678.5">27°</text></g>
+</g>
+<text class="caption" x="24" y="978">Cassinha Minha Fisio Querida — 30/06/1983 03:55, Belo Horizonte</text>
+</svg></span>
+  <span class="flabel">Mapa</span>
+</button>
+<button class="tile" type="button" onclick="show('visao-geral')" style="animation-delay:40ms" data-section="visao-geral" data-planets="sun moon mercury mars jupiter" data-aspects="moon-jupiter" data-houses="1 2 7 10">
+  <span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☽♃</span></span>
+  <h3>Visão Geral do Mapa</h3>
+  <span class="face"><span class="fglyph">🌟</span><span class="frule"></span><span class="flabel">Visão geral</span></span>
+</button>
+<button class="tile" type="button" onclick="show('identidade-essencial')" style="animation-delay:80ms" data-section="identidade-essencial" data-planets="sun moon mars" data-aspects="sun-moon sun-mars" data-houses="1 2">
+  <span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">♂</span><span class="ic aspect">☉☽</span></span>
+  <h3>A Essência de Quem Você É</h3>
+  <span class="face"><span class="fglyph">👤</span><span class="frule"></span><span class="flabel">Identidade</span></span>
+</button>
+<button class="tile" type="button" onclick="show('mente-comunicacao')" style="animation-delay:120ms" data-section="mente-comunicacao" data-planets="mercury venus mars saturn moon" data-aspects="mercury-venus mercury-mars mercury-saturn moon-mercury" data-houses="2">
+  <span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic body">♂</span><span class="ic aspect">☿♀</span></span>
+  <h3>Mente Ágil e Comunicação</h3>
+  <span class="face"><span class="fglyph">🧠</span><span class="frule"></span><span class="flabel">Mente</span></span>
+</button>
+<button class="tile" type="button" onclick="show('amor-relacionamentos')" style="animation-delay:160ms" data-section="amor-relacionamentos" data-planets="venus saturn mercury jupiter" data-aspects="venus-saturn mercury-venus" data-houses="3 7">
+  <span class="ics"><span class="ic theme">💞</span><span class="ic body">♀</span><span class="ic body">♄</span><span class="ic body">☿</span><span class="ic aspect">♀♄</span></span>
+  <h3>Amor e Relacionamentos</h3>
+  <span class="face"><span class="fglyph">💞</span><span class="frule"></span><span class="flabel">Amor</span></span>
+</button>
+<button class="tile" type="button" onclick="show('vocacao-carreira')" style="animation-delay:200ms" data-section="vocacao-carreira" data-planets="moon saturn mercury mars jupiter" data-aspects="moon-saturn moon-mercury moon-mars moon-jupiter" data-houses="7 10">
+  <span class="ics"><span class="ic theme">💼</span><span class="ic body">☽</span><span class="ic body">♄</span><span class="ic body">☿</span><span class="ic aspect">☽♄</span></span>
+  <h3>Vocação e Realização Profissional</h3>
+  <span class="face"><span class="fglyph">💼</span><span class="frule"></span><span class="flabel">Carreira</span></span>
+</button>
+<button class="tile" type="button" onclick="show('mundo-emocional')" style="animation-delay:240ms" data-section="mundo-emocional" data-planets="moon sun saturn mars" data-aspects="sun-moon moon-saturn moon-jupiter" data-houses="2 10">
+  <span class="ics"><span class="ic theme">🏠</span><span class="ic body">☽</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic aspect">☉☽</span></span>
+  <h3>Mundo Emocional e Raízes</h3>
+  <span class="face"><span class="fglyph">🏠</span><span class="frule"></span><span class="flabel">Raízes</span></span>
+</button>
+<button class="tile" type="button" onclick="show('crescimento-desafios')" style="animation-delay:280ms" data-section="crescimento-desafios" data-planets="moon jupiter saturn venus mars" data-aspects="moon-jupiter moon-saturn venus-saturn mars-saturn" data-houses="5 7 10">
+  <span class="ics"><span class="ic theme">🌱</span><span class="ic body">☽</span><span class="ic body">♃</span><span class="ic body">♄</span><span class="ic aspect">☽♃</span></span>
+  <h3>Crescimento e Desafios de Vida</h3>
+  <span class="face"><span class="fglyph">🌱</span><span class="frule"></span><span class="flabel">Crescimento</span></span>
+</button>
+      </div>
+      <div class="groupsep" aria-hidden="true">✦</div>
+      <button class="tile databar" type="button" onclick="show('dados')" style="animation-delay:320ms"><span class="dg">📋</span><span class="dl">Dados do mapa</span><span class="dch">›</span></button>
+    </div>
+<article class="detail" id="d-visao-geral" data-section="visao-geral" data-planets="sun moon mercury mars jupiter" data-aspects="moon-jupiter" data-houses="1 2 7 10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☽♃</span></span>Visão Geral do Mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">☿ Mercury</span><span class="chip">♂ Mars</span><span class="chip">♃ Jupiter</span><span class="chip">☽ □ ♃ Moon–Jupiter</span><span class="chip">⌂ Casa 1</span><span class="chip">⌂ Casa 2</span><span class="chip">⌂ Casa 7</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>Cassinha, seu mapa natal revela uma personalidade sensível, curiosa e profundamente conectada tanto ao mundo das emoções quanto ao das ideias. Com o Ascendente em Gêmeos, você se apresenta ao mundo como alguém comunicativo, versátil e cheio de vida, sempre pronto para trocar informações, aprender coisas novas e circular entre diferentes ambientes e pessoas. Essa fachada leve e articulada esconde, porém, uma alma muito mais funda: o Sol em Câncer traz um coração que sente tudo intensamente, que valoriza o pertencimento, a família e os laços afetivos como bússola de vida.</p><div class="sep" aria-hidden="true">☽ □ ♃</div><p>Há no seu mapa uma bela concentração de energia entre o segundo signo e a segunda casa, onde Sol, Mercúrio e Marte se reúnem. Isso indica que boa parte da sua vitalidade se dirige à construção de segurança, à valorização daquilo que você possui e à afirmação dos seus próprios recursos e talentos. Ao mesmo tempo, a Lua em Peixes bem no topo do mapa, na décima casa, ilumina uma vocação voltada ao cuidado, à sensibilidade e ao serviço ao próximo, algo que combina perfeitamente com uma trajetória ligada à fisioterapia e às profissões de acolhimento.</p><div class="sep" aria-hidden="true">☉ · ☽ · ☿</div><p>O padrão de aspectos do seu mapa é predominantemente harmônico, com muitos trígonos e sextis envolvendo Lua, Mercúrio, Marte e Saturno. Isso sugere uma pessoa capaz de integrar razão e emoção, de agir com sensibilidade e ao mesmo tempo com disciplina. Você tende a resolver conflitos de forma diplomática, encontrando fluidez onde outros veriam obstáculos. A única tensão significativa, o quadrado entre a Lua e Júpiter, aponta para um aprendizado importante em torno do equilíbrio entre suas necessidades emocionais e seus grandes ideais ou anseios de expansão.</p><div class="sep" aria-hidden="true">🌟</div><p>As casas angulares ocupadas pela Lua e por Júpiter reforçam que os temas do cuidado emocional e da parceria, da fé e do crescimento são pilares centrais da sua existência. Você é alguém que não vive isolado: precisa dos outros, do vínculo, da relação, e é justamente através das trocas humanas que encontra seu maior sentido. Sua jornada envolve aprender a nutrir os outros sem se esquecer de si mesma, a cuidar sem se sobrecarregar e a sonhar grande sem perder o chão afetivo.</p><div class="sep" aria-hidden="true">☽ □ ♃</div><p>Em linhas gerais, este é o mapa de uma pessoa gentil, inteligente e emocionalmente rica, que combina a leveza mental de Gêmeos com a profundidade afetiva de Câncer e Peixes. Seus dons se expressam melhor quando você une comunicação e cuidado, quando coloca sua sensibilidade a serviço de algo maior e quando se permite construir, com paciência e método, uma vida segura e significativa. Ao longo das próximas seções, vamos explorar como cada uma dessas energias colore áreas específicas da sua vida, dos afetos ao trabalho, da mente às raízes emocionais.</p><div class="sep" aria-hidden="true">☉ · ☽ · ☿</div><p>Guarde esta imagem inicial: você é uma ponte entre mundos, alguém que traduz sentimentos em palavras e que transforma cuidado em vocação. Reconhecer essa dualidade fértil é o primeiro passo para viver seu mapa com mais consciência e plenitude.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-essencial',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-identidade-essencial" data-section="identidade-essencial" data-planets="sun moon mars" data-aspects="sun-moon sun-mars" data-houses="1 2">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">♂</span><span class="ic aspect">☉☽</span></span>A Essência de Quem Você É</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">♂ Mars</span><span class="chip">☉ △ ☽ Sun–Moon</span><span class="chip">☉ ☌ ♂ Sun–Mars</span><span class="chip">⌂ Casa 1</span><span class="chip">⌂ Casa 2</span>
+  <div class="body"><p>Seu Sol em Câncer é o núcleo da sua identidade, e ele revela uma pessoa profundamente emocional, protetora e ligada às suas origens. Câncer é o signo do cuidado, da memória afetiva e do lar, e ter o Sol aqui significa que você brilha justamente quando nutre, acolhe e cria vínculos de confiança. Sua força não vem da imposição, mas da capacidade de sentir o outro, de perceber o que está por baixo das aparências e de oferecer um porto seguro. Há em você uma sensibilidade quase intuitiva, que percebe climas emocionais antes mesmo que sejam ditos.</p><div class="sep" aria-hidden="true">☉ △ ☽</div><p>Esse Sol está na segunda casa, o que conecta sua identidade à ideia de segurança material e emocional. Você precisa sentir que tem uma base sólida, recursos próprios e valor reconhecido para se sentir verdadeiramente você. A conjunção do Sol com Marte, também em Câncer, adiciona coragem e força de vontade a esse coração sensível. Você não é apenas alguém que sente, mas alguém que age a partir do que sente, defendendo com garra aquilo e aqueles que ama. Essa combinação dá impulso, iniciativa e uma determinação silenciosa mas persistente.</p><div class="sep" aria-hidden="true">☉ ☌ ♂</div><p>O belo trígono entre o Sol e a Lua indica uma harmonia interna preciosa: sua vontade consciente e suas necessidades emocionais caminham na mesma direção. Isso significa que você tende a saber o que quer e o que sente sem grandes conflitos internos, o que confere uma sensação natural de integridade e autenticidade. Pessoas com esse aspecto costumam transmitir uma serenidade e um equilíbrio que atraem confiança, pois há coerência entre o que expressam e o que verdadeiramente são por dentro.</p><div class="sep" aria-hidden="true">☉ · ☽ · ♂</div><p>O Ascendente em Gêmeos, por sua vez, dá à sua personalidade um verniz de leveza, curiosidade e sociabilidade. À primeira vista, você parece comunicativa, adaptável e mentalmente ágil, sempre interessada em conversar e conhecer. Existe aqui um contraste interessante: por fora, o ar de Gêmeos pede movimento e variedade; por dentro, a água de Câncer pede profundidade e constância. Aprender a honrar essas duas facetas, sem sentir que precisa escolher entre ser leve ou ser profunda, é parte importante do seu amadurecimento.</p><div class="sep" aria-hidden="true">👤</div><p>Marte na segunda casa também sugere que você luta pela sua estabilidade e sabe se afirmar quando o assunto é proteger seus interesses e valores. Sua energia de ação se dirige à construção concreta de uma vida segura, e você pode ser bastante empreendedora quando se sente emocionalmente motivada. O desafio é não deixar que a insegurança canceriana leve ao apego excessivo ou ao medo de mudanças, especialmente porque o Ascendente geminiano floresce justamente com flexibilidade.</p><div class="sep" aria-hidden="true">☉ △ ☽</div><p>Em resumo, sua identidade é a de uma pessoa emocionalmente inteligente, afetuosa e corajosa, que se comunica com facilidade mas guarda uma vida interior rica e profunda. Você é ao mesmo tempo o abrigo e o mensageiro, aquela que acolhe e aquela que conecta. Reconhecer o valor dessa dualidade, permitindo que sua sensibilidade e sua leveza convivam, é a chave para viver plenamente a essência do seu Sol em Câncer.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('visao-geral',true)">‹ anterior</button><button class="btn" type="button" onclick="show('mente-comunicacao',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-mente-comunicacao" data-section="mente-comunicacao" data-planets="mercury venus mars saturn moon" data-aspects="mercury-venus mercury-mars mercury-saturn moon-mercury" data-houses="2">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">♀</span><span class="ic body">♂</span><span class="ic aspect">☿♀</span></span>Mente Ágil e Comunicação</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☿ Mercury</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">♄ Saturn</span><span class="chip">☽ Moon</span><span class="chip">☿ ⚹ ♀ Mercury–Venus</span><span class="chip">☿ ☌ ♂ Mercury–Mars</span><span class="chip">☿ △ ♄ Mercury–Saturn</span><span class="chip">☽ △ ☿ Moon–Mercury</span><span class="chip">⌂ Casa 2</span>
+  <div class="body"><p>Com Mercúrio em Gêmeos, você possui uma mente naturalmente veloz, curiosa e versátil. Gêmeos é a morada de Mercúrio, o que significa que seu intelecto opera aqui com grande eficiência e brilho. Você aprende rápido, associa ideias com facilidade, gosta de variedade de assuntos e tem talento para a palavra, seja falada ou escrita. Sua curiosidade é insaciável, e você provavelmente se entedia com rotinas mentais monótonas, precisando de estímulos constantes e de liberdade para explorar diferentes áreas do conhecimento.</p><div class="sep" aria-hidden="true">☿ ⚹ ♀</div><p>Esse Mercúrio está posicionado na segunda casa, o que conecta sua inteligência aos seus recursos e à sua capacidade de gerar valor. Você tende a pensar bastante sobre segurança, sobre como usar seus talentos comunicativos para construir estabilidade, e pode ter habilidade para negociar, ensinar, orientar ou lidar com informações de maneira prática. Suas ideias não ficam apenas no campo abstrato: elas se voltam à realidade concreta, ao que pode ser aplicado e transformado em recurso tangível.</p><div class="sep" aria-hidden="true">☿ ☌ ♂</div><p>A conjunção de Mercúrio com Marte confere à sua forma de pensar e falar uma dose de assertividade e energia. Você defende suas opiniões com firmeza, tem raciocínio rápido em situações de pressão e pode ser bastante persuasiva quando quer. Essa combinação favorece o debate, a argumentação e a coragem de expressar o que pensa. Cuidado apenas para que a impaciência não transforme a comunicação em algo demasiado direto ou impulsivo em certos momentos; canalizar essa energia mental para causas construtivas rende ótimos resultados.</p><div class="sep" aria-hidden="true">☿ △ ♄</div><p>O sextil entre Mercúrio e Vênus adiciona charme e diplomacia à sua fala. Você sabe se expressar de forma agradável, tem senso estético e apreciação pela beleza das palavras e das ideias. Esse aspecto favorece relações harmoniosas, capacidade de mediar conflitos e um jeito gentil de comunicar mesmo assuntos difíceis. Há em você um dom para tornar as conversas leves, para envolver as pessoas com simpatia e para criar pontes através do diálogo.</p><div class="sep" aria-hidden="true">☽ △ ☿</div><p>Já o trígono entre Mercúrio e Saturno traz maturidade, foco e capacidade de concentração ao seu pensamento. Apesar da agilidade geminiana, você é capaz de disciplinar a mente, de aprofundar estudos e de pensar de forma estruturada e responsável quando necessário. Esse aspecto é excelente para o aprendizado sério, para o planejamento e para a tomada de decisões ponderadas. Ele equilibra a dispersão natural de Gêmeos com senso prático e realismo, permitindo que suas muitas ideias se transformem em projetos concretos e duradouros.</p><div class="sep" aria-hidden="true">☿ · ♀ · ♂</div><p>O trígono da Lua com Mercúrio completa esse quadro harmonioso, unindo emoção e razão. Você consegue expressar seus sentimentos com clareza e, ao mesmo tempo, pensar com sensibilidade, levando em conta o lado humano das questões. Essa integração entre coração e mente é um dom valioso, especialmente em profissões que exigem escuta e comunicação acolhedora, como é o caso do cuidado com pessoas.</p><div class="sep" aria-hidden="true">🧠</div><p>Em conjunto, esses posicionamentos revelam uma mente brilhante, comunicativa e equilibrada, capaz de unir rapidez e profundidade, charme e disciplina. Investir em estudos, em atividades que envolvam ensino, escrita ou orientação, e em ambientes que valorizem sua inteligência versátil pode ser extremamente gratificante e alinhado ao seu potencial natural.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-essencial',true)">‹ anterior</button><button class="btn" type="button" onclick="show('amor-relacionamentos',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-amor-relacionamentos" data-section="amor-relacionamentos" data-planets="venus saturn mercury jupiter" data-aspects="venus-saturn mercury-venus" data-houses="3 7">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💞</span><span class="ic body">♀</span><span class="ic body">♄</span><span class="ic body">☿</span><span class="ic aspect">♀♄</span></span>Amor e Relacionamentos</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">♀ Venus</span><span class="chip">♄ Saturn</span><span class="chip">☿ Mercury</span><span class="chip">♃ Jupiter</span><span class="chip">♀ ⚹ ♄ Venus–Saturn</span><span class="chip">☿ ⚹ ♀ Mercury–Venus</span><span class="chip">⌂ Casa 3</span><span class="chip">⌂ Casa 7</span>
+  <div class="body"><p>Vênus em Leo, na terceira casa, colore sua vida afetiva com calor, generosidade e desejo de expressão. Você ama de forma intensa e leal, gosta de demonstrar carinho de maneira aberta e aprecia relacionamentos que tenham brilho, romance e reconhecimento mútuo. Há em você um lado que quer ser admirada e valorizada pelo par, assim como um enorme prazer em fazer o outro se sentir especial. Gestos afetuosos, elogios, momentos de celebração e uma boa dose de teatralidade amorosa fazem seu coração feliz.</p><div class="sep" aria-hidden="true">♀ ⚹ ♄</div><p>Essa Vênus na terceira casa também associa o amor à comunicação e às trocas intelectuais. Você se apaixona pela mente, pelas conversas, pelas palavras bonitas. Um relacionamento que não tenha diálogo, cumplicidade e estímulo mental dificilmente prende seu interesse. Você valoriza parceiros que saibam conversar, que compartilhem ideias e que mantenham a curiosidade viva. O afeto, para você, floresce muito através da expressão verbal, das mensagens carinhosas e da capacidade de rir e trocar junto no cotidiano.</p><div class="sep" aria-hidden="true">☿ ⚹ ♀</div><p>O sextil entre Vênus e Saturno é um dos aspectos mais valiosos para a vida amorosa, pois traz maturidade, lealdade e senso de compromisso aos seus afetos. Apesar de toda a paixão de Vênus em Leo, você entende o valor da estabilidade, da constância e da responsabilidade nos vínculos. Esse aspecto favorece relacionamentos duradouros, construídos com respeito e comprometimento real. Você não se contenta com afetos superficiais: busca uma segurança emocional que se sustente ao longo do tempo, ainda que sem abrir mão do romance.</p><div class="sep" aria-hidden="true">♀ · ♄ · ☿</div><p>O sextil entre Vênus e Mercúrio reforça esse gosto pela harmonia nas relações e pela comunicação afetuosa. Você tem facilidade para expressar seus sentimentos, para encantar através das palavras e para criar climas agradáveis nos relacionamentos. Isso faz de você uma parceira e uma amiga charmosa, capaz de resolver desentendimentos com diplomacia e de manter o afeto vivo através do diálogo constante.</p><div class="sep" aria-hidden="true">💞</div><p>Com o Ascendente em Gêmeos e forte influência de Câncer no mapa, existe em suas relações uma bela combinação de leveza e profundidade. Por um lado, você precisa de espaço, variedade e estímulo mental; por outro, você anseia por segurança emocional, cuidado e pertencimento. Encontrar parceiros que respeitem essas duas necessidades é fundamental. Relações que sufocam sua liberdade ou, ao contrário, que não oferecem constância emocional, tendem a gerar desconforto.</p><div class="sep" aria-hidden="true">♀ ⚹ ♄</div><p>Júpiter na sétima casa, a casa das parcerias, é um indicativo muito positivo para relacionamentos. Ele sugere que você tende a atrair parceiros generosos, otimistas e que ampliam seus horizontes, ou que crescem junto com você. Há aqui uma expectativa de expansão e de aprendizado através do outro, e frequentemente as relações significativas trazem oportunidades de evolução, viagens, estudos ou uma visão de mundo mais ampla. A parceria é, para você, um caminho de crescimento.</p><div class="sep" aria-hidden="true">☿ ⚹ ♀</div><p>Em síntese, sua vida amorosa combina paixão, lealdade e comunicação. Você ama com o coração aberto e generoso de Leão, com o compromisso maduro de Saturno e com a necessidade de troca de Gêmeos. Buscar equilíbrio entre liberdade e segurança, e valorizar parceiros que sejam também amigos e companheiros de conversa, é o caminho para relacionamentos plenos e duradouros.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('mente-comunicacao',true)">‹ anterior</button><button class="btn" type="button" onclick="show('vocacao-carreira',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-vocacao-carreira" data-section="vocacao-carreira" data-planets="moon saturn mercury mars jupiter" data-aspects="moon-saturn moon-mercury moon-mars moon-jupiter" data-houses="7 10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💼</span><span class="ic body">☽</span><span class="ic body">♄</span><span class="ic body">☿</span><span class="ic aspect">☽♄</span></span>Vocação e Realização Profissional</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">♄ Saturn</span><span class="chip">☿ Mercury</span><span class="chip">♂ Mars</span><span class="chip">♃ Jupiter</span><span class="chip">☽ △ ♄ Moon–Saturn</span><span class="chip">☽ △ ☿ Moon–Mercury</span><span class="chip">☽ △ ♂ Moon–Mars</span><span class="chip">☽ □ ♃ Moon–Jupiter</span><span class="chip">⌂ Casa 7</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>A Lua em Peixes no topo do seu mapa, ocupando a décima casa, é um dos posicionamentos mais marcantes da sua carta e revela muito sobre sua vocação. A décima casa fala da carreira, da imagem pública e daquilo que você quer construir e realizar no mundo. Ter a Lua aqui, e ainda em Peixes, aponta para uma vocação profundamente ligada ao cuidado, à sensibilidade, à cura e ao serviço ao próximo. Sua profissão está intimamente conectada às suas emoções e à necessidade de ajudar, acolher e fazer diferença na vida das pessoas.</p><div class="sep" aria-hidden="true">☽ △ ♄</div><p>Peixes é o signo da compaixão, da empatia e da dedicação, o que combina de forma extraordinária com uma trajetória na área da saúde e do cuidado, como a fisioterapia. Você tem um dom natural para perceber o que o outro precisa, para oferecer conforto e para trabalhar com o corpo e a sensibilidade das pessoas de maneira delicada e transformadora. Sua imagem pública tende a ser vista como acolhedora, intuitiva e humana, e você inspira confiança justamente pela genuína capacidade de se importar.</p><div class="sep" aria-hidden="true">☽ △ ☿</div><p>O trígono entre a Lua e Saturno é um aspecto excelente para a carreira, pois une sensibilidade emocional com disciplina, responsabilidade e capacidade de construção sólida. Você consegue transformar sua compaixão em profissionalismo, dando forma concreta e estruturada ao seu desejo de cuidar. Esse aspecto confere maturidade emocional, seriedade no trabalho e a habilidade de perseverar mesmo diante das dificuldades. Sua reputação se constrói com o tempo, baseada em confiabilidade e comprometimento real.</p><div class="sep" aria-hidden="true">☽ △ ♂</div><p>O trígono da Lua com Mercúrio e com Marte adiciona comunicação, iniciativa e energia à sua atuação profissional. Você sabe expressar cuidado através das palavras, orientar com clareza e agir com determinação em prol daqueles que atende. Essa combinação favorece profissões que exijam contato humano, escuta atenta e ação prática, permitindo que você una empatia e eficiência. Seu trabalho ganha vida quando envolve tanto o coração quanto as mãos.</p><div class="sep" aria-hidden="true">☽ □ ♃</div><p>É importante, porém, prestar atenção ao quadrado entre a Lua e Júpiter, que pode gerar tensões no campo vocacional. Esse aspecto às vezes traz a tendência de assumir mais do que você pode, de se doar em excesso ou de idealizar demais o trabalho e as relações profissionais. Há o risco de se sobrecarregar emocionalmente ao querer atender a todos, ou de oscilar entre grandes expectativas e sentimentos de frustração. Aprender a estabelecer limites saudáveis e a cuidar de si com o mesmo zelo com que cuida dos outros é fundamental.</p><div class="sep" aria-hidden="true">☽ · ♄ · ☿</div><p>Júpiter na sétima casa também sugere que parcerias profissionais, colaborações e o atendimento direto a clientes ou pacientes são fontes de crescimento e prosperidade para você. Você tende a florescer em contextos relacionais, onde o vínculo com o outro é central. Trabalhar em equipe, em sociedade ou em atendimento individualizado pode abrir muitas portas e trazer grande satisfação.</p><div class="sep" aria-hidden="true">💼</div><p>Em resumo, sua vocação é a de cuidar, curar e servir com sensibilidade e competência. Você tem o dom raro de unir emoção e disciplina, empatia e ação. Realizar-se profissionalmente através do cuidado humano, mantendo limites e evitando a sobrecarga, é o caminho para uma carreira sólida, respeitada e profundamente gratificante para sua alma.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('amor-relacionamentos',true)">‹ anterior</button><button class="btn" type="button" onclick="show('mundo-emocional',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-mundo-emocional" data-section="mundo-emocional" data-planets="moon sun saturn mars" data-aspects="sun-moon moon-saturn moon-jupiter" data-houses="2 10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🏠</span><span class="ic body">☽</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic aspect">☉☽</span></span>Mundo Emocional e Raízes</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">☉ Sun</span><span class="chip">♄ Saturn</span><span class="chip">♂ Mars</span><span class="chip">☉ △ ☽ Sun–Moon</span><span class="chip">☽ △ ♄ Moon–Saturn</span><span class="chip">☽ □ ♃ Moon–Jupiter</span><span class="chip">⌂ Casa 2</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>Sua vida emocional é rica, profunda e altamente intuitiva, fruto da combinação entre o Sol em Câncer e a Lua em Peixes, dois dos signos mais sensíveis do zodíaco. Você sente o mundo de forma intensa, capta as emoções ao seu redor quase por osmose e possui uma imaginação fértil e uma vida interior repleta de nuances. Essa sensibilidade é um dom precioso, pois permite compreensão profunda dos outros e uma conexão empática rara, mas também exige cuidado para que você não absorva mais do que consegue processar.</p><div class="sep" aria-hidden="true">☉ △ ☽</div><p>A Lua em Peixes indica uma alma compassiva, sonhadora e espiritualizada. Você tende a ter forte intuição, talvez até experiências de percepção sutil, e uma necessidade emocional de se conectar a algo maior, seja através da fé, da arte, da natureza ou do serviço aos outros. Suas emoções fluem como água, sem fronteiras rígidas, o que faz de você alguém extremamente acolhedor, mas também sensível demais a ambientes pesados. Reservar momentos de silêncio, recolhimento e recarga é essencial para seu bem-estar.</p><div class="sep" aria-hidden="true">☽ △ ♄</div><p>O belo trígono entre a Lua e o Sol reforça a harmonia interna que mencionamos: suas emoções e sua vontade caminham juntas, dando-lhe estabilidade afetiva e autoconhecimento. Você raramente entra em guerra consigo mesma, o que é uma grande vantagem para a saúde emocional. Já os trígonos da Lua com Mercúrio e Marte permitem que você expresse seus sentimentos com clareza e aja de acordo com eles, sem reprimir o que sente nem paralisar diante das emoções.</p><div class="sep" aria-hidden="true">☽ □ ♃</div><p>O trígono entre a Lua e Saturno, por sua vez, dá maturidade e estrutura ao seu mundo emocional. Apesar de toda a sensibilidade pisciana, você é capaz de conter, organizar e dar sentido prático às suas emoções. Esse aspecto oferece resiliência, capacidade de lidar com responsabilidades afetivas e uma seriedade que equilibra o lado etéreo de Peixes. Você sabe ser o porto seguro dos outros justamente porque desenvolveu solidez interior.</p><div class="sep" aria-hidden="true">☽ · ☉ · ♄</div><p>O desafio central desse retrato emocional aparece no quadrado entre a Lua e Júpiter. Esse aspecto pode gerar oscilações entre otimismo exagerado e desânimo, tendência a se doar em excesso, dificuldade em estabelecer limites ou uma fome emocional que busca preenchimento no exterior. Você pode, por vezes, idealizar situações e pessoas, ou sentir que nada é suficiente para saciar sua profundidade afetiva. Trabalhar a moderação, o autocuidado e a aceitação das próprias necessidades é parte importante do seu crescimento.</p><div class="sep" aria-hidden="true">🏠</div><p>Com o Sol e Marte na segunda casa, suas raízes de segurança emocional estão ligadas à sensação de ter uma base estável, recursos próprios e valor reconhecido. Você se sente emocionalmente amparada quando tem estabilidade material e quando percebe que é valorizada por quem é. A família e o senso de pertencimento, tão importantes para o Sol canceriano, funcionam como alicerce da sua vida interior.</p><div class="sep" aria-hidden="true">☉ △ ☽</div><p>Em conjunto, seu mundo emocional é o de uma pessoa profundamente humana, intuitiva e capaz de grande amor. O caminho para o equilíbrio passa por honrar sua sensibilidade sem se perder nela, por estabelecer limites saudáveis e por cultivar espaços de recarga e espiritualidade. Ao cuidar de si com a mesma dedicação com que cuida dos outros, você transforma sua sensibilidade em fonte inesgotável de força e sabedoria.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('vocacao-carreira',true)">‹ anterior</button><button class="btn" type="button" onclick="show('crescimento-desafios',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-crescimento-desafios" data-section="crescimento-desafios" data-planets="moon jupiter saturn venus mars" data-aspects="moon-jupiter moon-saturn venus-saturn mars-saturn" data-houses="5 7 10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌱</span><span class="ic body">☽</span><span class="ic body">♃</span><span class="ic body">♄</span><span class="ic aspect">☽♃</span></span>Crescimento e Desafios de Vida</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">♃ Jupiter</span><span class="chip">♄ Saturn</span><span class="chip">♀ Venus</span><span class="chip">♂ Mars</span><span class="chip">☽ □ ♃ Moon–Jupiter</span><span class="chip">☽ △ ♄ Moon–Saturn</span><span class="chip">♀ ⚹ ♄ Venus–Saturn</span><span class="chip">♂ △ ♄ Mars–Saturn</span><span class="chip">⌂ Casa 5</span><span class="chip">⌂ Casa 7</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>O grande eixo de crescimento do seu mapa se revela no diálogo entre a segurança emocional e a expansão dos horizontes, simbolizado pelo quadrado entre a Lua em Peixes e Júpiter em Sagitário. Esse é o principal aspecto de tensão da sua carta, e ele aponta para um aprendizado recorrente ao longo da vida: encontrar o equilíbrio entre suas necessidades afetivas de cuidado e recolhimento e seu anseio por liberdade, fé, aventura e expansão. Você pode oscilar entre o desejo de se aconchegar no conhecido e o impulso de se lançar ao novo e ao maior.</p><div class="sep" aria-hidden="true">☽ □ ♃</div><p>Esse quadrado pode se manifestar como uma tendência a exagerar, seja nas emoções, nas expectativas ou na entrega aos outros. Há em você uma generosidade tão grande que às vezes ultrapassa seus próprios limites, levando ao cansaço ou à frustração quando o retorno não corresponde ao que você deu. Aprender a dosar, a dizer não quando necessário e a reconhecer que você também merece cuidado é uma lição fundamental. A moderação, palavra tão distante da natureza expansiva de Júpiter e da sensibilidade sem fronteiras de Peixes, torna-se sua grande aliada.</p><div class="sep" aria-hidden="true">☽ △ ♄</div><p>Ao mesmo tempo, é importante reconhecer que a maior parte do seu mapa é harmônica, o que significa que você possui muitos recursos internos para lidar com esse desafio. Os inúmeros trígonos envolvendo Lua, Sol, Mercúrio, Marte e Saturno indicam que você tem talento natural para integrar emoção e razão, sensibilidade e disciplina, ação e reflexão. Esses aspectos funcionam como uma rede de apoio interna, permitindo que você supere as tensões com maturidade e encontre soluções equilibradas para os dilemas da vida.</p><div class="sep" aria-hidden="true">♀ ⚹ ♄</div><p>Saturno em Libra, na quinta casa, adiciona uma dimensão importante ao seu processo de amadurecimento. Ele indica que você aprende, com o tempo, a levar a sério questões ligadas à criatividade, ao prazer, aos filhos e à autoexpressão, talvez encontrando aqui algumas responsabilidades ou lições sobre equilíbrio nos relacionamentos afetivos. Os múltiplos aspectos harmônicos de Saturno com Lua, Mercúrio, Vênus e Marte mostram que sua estrutura, disciplina e senso de responsabilidade são pontos fortes que sustentam todas as outras áreas da vida.</p><div class="sep" aria-hidden="true">♂ △ ♄</div><p>Um dos grandes convites do seu mapa é aprender a confiar no fluxo da vida sem abrir mão da estrutura. A Lua em Peixes pede entrega, fé e conexão espiritual, enquanto Saturno pede compromisso e realismo. Quando você une essas duas forças, torna-se capaz de sonhar grande e, ao mesmo tempo, dar passos concretos para realizar seus sonhos. Essa é uma combinação poderosa para construir uma vida com significado e propósito.</p><div class="sep" aria-hidden="true">☽ · ♃ · ♄</div><p>Seu caminho de crescimento passa, portanto, por três grandes movimentos: cultivar limites saudáveis para não se sobrecarregar emocionalmente, equilibrar a necessidade de segurança com a coragem de se expandir, e integrar sua rica sensibilidade a uma estrutura de vida sólida e responsável. Ao fazer isso, você transforma seus desafios em sabedoria e sua sensibilidade em força criadora.</p><div class="sep" aria-hidden="true">🌱</div><p>Confie nos seus muitos dons, Cassinha. Seu mapa revela uma pessoa capaz de cuidar, comunicar, amar e construir com profundidade rara. Ao honrar tanto suas raízes quanto seus sonhos, você caminha em direção a uma vida cada vez mais plena, equilibrada e verdadeiramente sua.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('mundo-emocional',true)">‹ anterior</button></div>
+</article>
+<article class="detail" id="d-dados">
+  <div class="top">
+    <h3><span class="ics"><span class="ic general">📋</span></span>Dados do mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <table class="data">
+      <tr><td>Location</td><td>Belo Horizonte, Brazil (lat -19.9227, lon -43.9451)</td></tr>
+      <tr><td>Local time</td><td>1983-06-30 03:55:00 (America/Sao_Paulo)</td></tr>
+      <tr><td>UTC time</td><td>1983-06-30 06:55:00+00:00</td></tr>
+      <tr><td>Ascendant</td><td>Gemini 61.9°</td></tr>
+      <tr><td>Sun</td><td>Cancer 97.9° (House2)</td></tr>
+      <tr><td>Moon</td><td>Pisces 332.0° (House10)</td></tr>
+      <tr><td>Mercury</td><td>Gemini 86.9° (House2)</td></tr>
+      <tr><td>Venus</td><td>Leo 142.5° (House3)</td></tr>
+      <tr><td>Mars</td><td>Cancer 90.7° (House2)</td></tr>
+      <tr><td>Jupiter</td><td>Sagittarius 242.3° (House7)</td></tr>
+      <tr><td>Saturn</td><td>Libra 207.7° (House5)</td></tr>
+      <tr><td>Aspects</td><td>Sun trine Moon, Sun conjunction Mars, Moon trine Mercury, Moon trine Mars, Moon square Jupiter, Moon trine Saturn, Mercury sextile Venus, Mercury conjunction Mars, Mercury trine Saturn, Venus sextile Saturn, Mars trine Saturn</td></tr>
+      <tr><td>Angular planets</td><td>Moon, Jupiter</td></tr>
+  </table>
+</article>
+  </section>
+</div>
+<div class="pagesep foot" aria-hidden="true">☉ ☽ ☿ ♀ ♂ ♃ ♄</div>
+<footer>Gerado por Birth Chart — Utility Hub</footer>
+</main>
+<script>
+function nav(id,replace){
+  // iOS Safari throws SecurityError on history.* from a file:// document —
+  // don't let it abort the scroll or the open/close it follows.
+  try{replace?history.replaceState({v:id},''):history.pushState({v:id},'');}catch(e){}
+}
+function show(id,replace){
+  document.getElementById('tiles').style.display='none';
+  document.body.classList.remove('wheel-open');
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.getElementById('d-'+id).classList.add('open');
+  nav(id,replace);
+  window.scrollTo(0,0);
+}
+function showWheel(){
+  document.getElementById('tiles').style.display='none';
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.add('wheel-open');
+  nav('wheel',false);
+  window.scrollTo(0,0);
+}
+function back(){
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.remove('wheel-open');
+  document.getElementById('tiles').style.display='';
+}
+window.addEventListener('popstate',()=>back());
+document.addEventListener('keydown',e=>{if(e.key==='Escape')back();});
+</script>
+</body>
+</html>
