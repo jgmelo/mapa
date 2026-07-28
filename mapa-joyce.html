@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EFF3F2">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#161B1B">
+<title>Mapa Astral de Joyce</title>
+<style>
+:root{
+  /* Cool mineral theme: silver ground, blue/teal/green accents, matching
+     the wheel's slate-teal night ground. */
+  --bg:#EFF3F2;--surface:#FBFDFC;--ink:#1B2423;--muted:#5A6B69;--faint:#8AA09D;
+  --border:#D5DFDD;--border-strong:#AEC1BE;
+  --body-bg:#E2E9F8;--body-ink:#33508F;
+  --aspect-bg:#DDF0EA;--aspect-ink:#0C6A59;
+  --house-bg:#E4F1DC;--house-ink:#3F6B28;
+  --general-bg:#E9EEED;--general-ink:#4C5857;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#161B1B;--surface:#1F2525;--ink:#E8EEEC;--muted:#9FAFAD;--faint:#71807E;
+    --border:#333C3B;--border-strong:#4E5B59;
+    /* The wheel goes very dark in night mode (its built-in palette is the
+       lighter slate-teal used in light mode). */
+    --wheel-bg:#121717;--wheel-line:#3D4846;
+    --wheel-fire:#2E2422;--wheel-earth:#242B20;--wheel-air:#202737;--wheel-water:#1A302D;
+  }
+}
+*{box-sizing:border-box;margin:0}
+body{
+  background:var(--bg);color:var(--ink);padding:30px 20px 60px;
+  font:15px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+main{max-width:1460px;margin:0 auto}
+header h1{font-size:1.55rem;font-weight:650}
+header .birth{color:var(--muted);margin-top:4px;font-size:.92rem}
+.layout{
+  display:grid;grid-template-columns:minmax(330px,440px) 1fr;
+  gap:24px;margin-top:22px;align-items:flex-start;
+}
+.wheel{
+  background:var(--wheel-bg,#26302F);border:1px solid var(--border);
+  border-radius:14px;padding:6px;position:sticky;top:20px;
+}
+.wheel svg{width:100%;height:auto;display:block}
+.wheel .wheelbar{display:none}
+.reading{min-width:0}
+.hint{color:var(--faint);font-size:.8rem;margin-bottom:10px}
+.pagesep{
+  display:flex;align-items:center;gap:18px;margin:18px 0 2px;
+  color:var(--faint);font-size:16px;letter-spacing:4px;
+}
+.pagesep::before,.pagesep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.pagesep.foot{margin:32px 0 0;font-size:12px;letter-spacing:9px}
+.groupsep{
+  display:flex;align-items:center;gap:14px;margin:14px 0;
+  color:var(--faint);font-size:13px;
+}
+.groupsep::before,.groupsep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.tiles{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));
+  gap:14px;grid-auto-flow:dense;
+}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tile{
+  aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:16px;text-align:left;font:inherit;color:inherit;cursor:pointer;
+  display:flex;flex-direction:column;overflow:hidden;animation:rise .4s both;
+  transition:transform .08s;
+}
+.tile:hover{border-color:var(--border-strong);box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.tile:active{transform:scale(.96)}
+.detail h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.tile h3{
+  margin-top:auto;font-size:19px;font-weight:650;line-height:1.25;
+  overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;
+}
+.tile .face{display:none}
+.face .frule{width:26px;border-top:1px solid var(--border-strong)}
+.wheel-tile{display:none;grid-column:span 2;grid-row:span 2}
+.databar{
+  aspect-ratio:auto;flex-direction:row;align-items:center;gap:10px;
+  min-height:0;padding:12px 16px;width:100%;
+}
+.databar .dg{font-size:17px;flex:none}
+.databar .dl{font-weight:600;font-size:13.5px}
+.databar .dch{margin-left:auto;color:var(--faint)}
+.ics{display:flex;gap:6px;flex:none;flex-wrap:wrap}
+.ic{
+  width:26px;height:26px;border-radius:8px;flex:none;font-size:15px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.ic.theme{background:var(--general-bg)}
+.ic.body{background:var(--body-bg);color:var(--body-ink)}
+.ic.aspect{background:var(--aspect-bg);color:var(--aspect-ink);font-size:12px;letter-spacing:1px}
+.ic.house{background:var(--house-bg);color:var(--house-ink)}
+.ic.general{background:var(--general-bg);color:var(--general-ink)}
+.detail{
+  display:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:16px 18px;
+}
+.detail.open{display:block;animation:rise .25s both}
+.detail .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.btn{
+  font:inherit;font-size:.8rem;padding:3px 12px;cursor:pointer;flex:none;
+  background:var(--bg);border:1px solid var(--border);border-radius:999px;color:var(--muted);
+}
+.btn:hover{border-color:var(--border-strong);color:var(--ink)}
+.detail .top .btn{margin-left:auto}
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:11px;background:var(--bg);
+  border:1px solid var(--border);border-radius:6px;padding:2px 9px;
+  margin:2px 4px 2px 0;color:var(--muted);
+}
+.detail .body{margin-top:10px}
+.detail .body p{margin:0 0 10px}
+.sep{
+  display:flex;align-items:center;gap:14px;margin:16px 0;
+  color:var(--faint);font-size:15px;letter-spacing:4px;
+}
+.sep::before,.sep::after{content:'';flex:1;border-top:1px solid var(--border)}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+table.data{width:100%;border-collapse:collapse;font-size:12.5px}
+table.data td{padding:5px 8px;border-top:1px solid var(--border);vertical-align:top}
+table.data td:first-child{color:var(--muted);white-space:nowrap;width:34%}
+footer{margin-top:32px;color:var(--faint);font-size:.78rem;text-align:center}
+@media (max-width:940px){
+  body{padding:18px 12px 44px}
+  header h1{font-size:1.15rem}
+  header .birth{font-size:.8rem}
+  .layout{grid-template-columns:1fr;gap:14px;margin-top:14px}
+  .wheel{display:none;position:static}
+  body.wheel-open .wheel{display:block}
+  body.wheel-open .hint{display:none}
+  .wheel .wheelbar{display:flex;align-items:center;gap:10px;padding:4px 8px 10px}
+  .wheel .wheelbar h3{font-size:15px;color:#EFF4F1}
+  .wheel .wheelbar .btn{
+    margin-left:auto;background:transparent;color:#CFDAD6;border-color:#4F5C5A;
+  }
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+  .tile{padding:10px;border-radius:12px}
+  .tile h3,.tile .ics{display:none}
+  .tile .face{
+    display:flex;flex:1;flex-direction:column;align-items:center;
+    justify-content:center;gap:7px;
+  }
+  .fglyph{font-size:34px;line-height:1}
+  .flabel{font-size:11px;color:var(--muted);text-align:center}
+  .wheel-tile{display:flex;padding:7px;gap:4px}
+  .wheel-tile .mini{flex:1;min-height:0}
+  .wheel-tile .mini svg{width:100%;height:100%;display:block}
+  .wheel-tile .flabel{flex:none}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+@media print{.hint,.btn,.nav{display:none}.tile{aspect-ratio:auto}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Mapa Astral de Joyce</h1>
+  <p class="birth">Belo Horizonte, Brazil — 10/01/1984 16:00 (America/Sao_Paulo)</p>
+</header>
+<div class="pagesep" aria-hidden="true">♑ · ♊</div>
+<div class="layout">
+  <section class="wheel" aria-label="Roda do mapa astral">
+    <div class="wheelbar"><h3>Mapa</h3>
+      <button class="btn" type="button" onclick="back()">‹ Voltar</button></div>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 362.52 40.11 A 480.00 480.00 0 0 0 151.00 170.46 L 197.53 214.40 A 416.00 416.00 0 0 1 380.85 101.43 Z"/>
+<text class="sign-glyph" x="265.0" y="118.6">♈</text>
+<path class="sign sign-taurus element-earth" d="M 151.00 170.46 A 480.00 480.00 0 0 0 32.98 389.11 L 95.25 403.90 A 416.00 416.00 0 0 1 197.53 214.40 Z"/>
+<text class="sign-glyph" x="105.8" y="287.2">♉</text>
+<path class="sign sign-gemini element-air" d="M 32.98 389.11 A 480.00 480.00 0 0 0 40.11 637.48 L 101.43 619.15 A 416.00 416.00 0 0 1 95.25 403.90 Z"/>
+<text class="sign-glyph" x="52.2" y="512.8">♊</text>
+<path class="sign sign-cancer element-water" d="M 40.11 637.48 A 480.00 480.00 0 0 0 170.46 849.00 L 214.40 802.47 A 416.00 416.00 0 0 1 101.43 619.15 Z"/>
+<text class="sign-glyph" x="118.6" y="735.0">♋</text>
+<path class="sign sign-leo element-fire" d="M 170.46 849.00 A 480.00 480.00 0 0 0 389.11 967.02 L 403.90 904.75 A 416.00 416.00 0 0 1 214.40 802.47 Z"/>
+<text class="sign-glyph" x="287.2" y="894.2">♌</text>
+<path class="sign sign-virgo element-earth" d="M 389.11 967.02 A 480.00 480.00 0 0 0 637.48 959.89 L 619.15 898.57 A 416.00 416.00 0 0 1 403.90 904.75 Z"/>
+<text class="sign-glyph" x="512.8" y="947.8">♍</text>
+<path class="sign sign-libra element-air" d="M 637.48 959.89 A 480.00 480.00 0 0 0 849.00 829.54 L 802.47 785.60 A 416.00 416.00 0 0 1 619.15 898.57 Z"/>
+<text class="sign-glyph" x="735.0" y="881.4">♎</text>
+<path class="sign sign-scorpio element-water" d="M 849.00 829.54 A 480.00 480.00 0 0 0 967.02 610.89 L 904.75 596.10 A 416.00 416.00 0 0 1 802.47 785.60 Z"/>
+<text class="sign-glyph" x="894.2" y="712.8">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 967.02 610.89 A 480.00 480.00 0 0 0 959.89 362.52 L 898.57 380.85 A 416.00 416.00 0 0 1 904.75 596.10 Z"/>
+<text class="sign-glyph" x="947.8" y="487.2">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 959.89 362.52 A 480.00 480.00 0 0 0 829.54 151.00 L 785.60 197.53 A 416.00 416.00 0 0 1 898.57 380.85 Z"/>
+<text class="sign-glyph" x="881.4" y="265.0">♑</text>
+<path class="sign sign-aquarius element-air" d="M 829.54 151.00 A 480.00 480.00 0 0 0 610.89 32.98 L 596.10 95.25 A 416.00 416.00 0 0 1 785.60 197.53 Z"/>
+<text class="sign-glyph" x="712.8" y="105.8">♒</text>
+<path class="sign sign-pisces element-water" d="M 610.89 32.98 A 480.00 480.00 0 0 0 362.52 40.11 L 380.85 101.43 A 416.00 416.00 0 0 1 596.10 95.25 Z"/>
+<text class="sign-glyph" x="487.2" y="52.2">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="384.3" y1="112.9" x2="380.9" y2="101.4"/>
+<line class="tick" x1="349.1" y1="119.8" x2="346.6" y2="113.3"/>
+<line class="tick major" x1="318.8" y1="138.9" x2="313.5" y2="128.2"/>
+<line class="tick" x1="285.4" y1="151.8" x2="281.8" y2="145.8"/>
+<line class="tick major" x1="258.9" y1="175.8" x2="251.7" y2="166.2"/>
+<line class="tick" x1="228.2" y1="194.4" x2="223.6" y2="189.1"/>
+<line class="tick major" x1="206.3" y1="222.6" x2="197.5" y2="214.4"/>
+<line class="tick" x1="179.3" y1="246.2" x2="173.8" y2="241.8"/>
+<line class="tick major" x1="162.6" y1="277.9" x2="152.5" y2="271.3"/>
+<line class="tick" x1="140.1" y1="305.7" x2="133.9" y2="302.4"/>
+<line class="tick major" x1="129.1" y1="339.8" x2="118.1" y2="335.1"/>
+<line class="tick" x1="111.8" y1="371.2" x2="105.2" y2="369.0"/>
+<line class="tick major" x1="106.9" y1="406.7" x2="95.3" y2="403.9"/>
+<line class="tick" x1="95.3" y1="440.6" x2="88.4" y2="439.5"/>
+<line class="tick major" x1="96.7" y1="476.3" x2="84.7" y2="475.6"/>
+<line class="tick" x1="91.2" y1="511.7" x2="84.2" y2="511.9"/>
+<line class="tick major" x1="98.7" y1="546.7" x2="86.8" y2="548.1"/>
+<line class="tick" x1="99.4" y1="582.5" x2="92.6" y2="584.0"/>
+<line class="tick major" x1="112.9" y1="615.7" x2="101.4" y2="619.1"/>
+<line class="tick" x1="119.8" y1="650.9" x2="113.3" y2="653.4"/>
+<line class="tick major" x1="138.9" y1="681.2" x2="128.2" y2="686.5"/>
+<line class="tick" x1="151.8" y1="714.6" x2="145.8" y2="718.2"/>
+<line class="tick major" x1="175.8" y1="741.1" x2="166.2" y2="748.3"/>
+<line class="tick" x1="194.4" y1="771.8" x2="189.1" y2="776.4"/>
+<line class="tick major" x1="222.6" y1="793.7" x2="214.4" y2="802.5"/>
+<line class="tick" x1="246.2" y1="820.7" x2="241.8" y2="826.2"/>
+<line class="tick major" x1="277.9" y1="837.4" x2="271.3" y2="847.5"/>
+<line class="tick" x1="305.7" y1="859.9" x2="302.4" y2="866.1"/>
+<line class="tick major" x1="339.8" y1="870.9" x2="335.1" y2="881.9"/>
+<line class="tick" x1="371.2" y1="888.2" x2="369.0" y2="894.8"/>
+<line class="tick major" x1="406.7" y1="893.1" x2="403.9" y2="904.7"/>
+<line class="tick" x1="440.6" y1="904.7" x2="439.5" y2="911.6"/>
+<line class="tick major" x1="476.3" y1="903.3" x2="475.6" y2="915.3"/>
+<line class="tick" x1="511.7" y1="908.8" x2="511.9" y2="915.8"/>
+<line class="tick major" x1="546.7" y1="901.3" x2="548.1" y2="913.2"/>
+<line class="tick" x1="582.5" y1="900.6" x2="584.0" y2="907.4"/>
+<line class="tick major" x1="615.7" y1="887.1" x2="619.1" y2="898.6"/>
+<line class="tick" x1="650.9" y1="880.2" x2="653.4" y2="886.7"/>
+<line class="tick major" x1="681.2" y1="861.1" x2="686.5" y2="871.8"/>
+<line class="tick" x1="714.6" y1="848.2" x2="718.2" y2="854.2"/>
+<line class="tick major" x1="741.1" y1="824.2" x2="748.3" y2="833.8"/>
+<line class="tick" x1="771.8" y1="805.6" x2="776.4" y2="810.9"/>
+<line class="tick major" x1="793.7" y1="777.4" x2="802.5" y2="785.6"/>
+<line class="tick" x1="820.7" y1="753.8" x2="826.2" y2="758.2"/>
+<line class="tick major" x1="837.4" y1="722.1" x2="847.5" y2="728.7"/>
+<line class="tick" x1="859.9" y1="694.3" x2="866.1" y2="697.6"/>
+<line class="tick major" x1="870.9" y1="660.2" x2="881.9" y2="664.9"/>
+<line class="tick" x1="888.2" y1="628.8" x2="894.8" y2="631.0"/>
+<line class="tick major" x1="893.1" y1="593.3" x2="904.7" y2="596.1"/>
+<line class="tick" x1="904.7" y1="559.4" x2="911.6" y2="560.5"/>
+<line class="tick major" x1="903.3" y1="523.7" x2="915.3" y2="524.4"/>
+<line class="tick" x1="908.8" y1="488.3" x2="915.8" y2="488.1"/>
+<line class="tick major" x1="901.3" y1="453.3" x2="913.2" y2="451.9"/>
+<line class="tick" x1="900.6" y1="417.5" x2="907.4" y2="416.0"/>
+<line class="tick major" x1="887.1" y1="384.3" x2="898.6" y2="380.9"/>
+<line class="tick" x1="880.2" y1="349.1" x2="886.7" y2="346.6"/>
+<line class="tick major" x1="861.1" y1="318.8" x2="871.8" y2="313.5"/>
+<line class="tick" x1="848.2" y1="285.4" x2="854.2" y2="281.8"/>
+<line class="tick major" x1="824.2" y1="258.9" x2="833.8" y2="251.7"/>
+<line class="tick" x1="805.6" y1="228.2" x2="810.9" y2="223.6"/>
+<line class="tick major" x1="777.4" y1="206.3" x2="785.6" y2="197.5"/>
+<line class="tick" x1="753.8" y1="179.3" x2="758.2" y2="173.8"/>
+<line class="tick major" x1="722.1" y1="162.6" x2="728.7" y2="152.5"/>
+<line class="tick" x1="694.3" y1="140.1" x2="697.6" y2="133.9"/>
+<line class="tick major" x1="660.2" y1="129.1" x2="664.9" y2="118.1"/>
+<line class="tick" x1="628.8" y1="111.8" x2="631.0" y2="105.2"/>
+<line class="tick major" x1="593.3" y1="106.9" x2="596.1" y2="95.3"/>
+<line class="tick" x1="559.4" y1="95.3" x2="560.5" y2="88.4"/>
+<line class="tick major" x1="523.7" y1="96.7" x2="524.4" y2="84.7"/>
+<line class="tick" x1="488.3" y1="91.2" x2="488.1" y2="84.2"/>
+<line class="tick major" x1="453.3" y1="98.7" x2="451.9" y2="86.8"/>
+<line class="tick" x1="417.5" y1="99.4" x2="416.0" y2="92.6"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="294.3" y1="619.7" x2="140.4" y2="709.2"/>
+<line class="cusp house-3" x1="391.0" y1="711.6" x2="309.5" y2="869.8"/>
+<line class="cusp house-4 axis" x1="526.4" y1="736.5" x2="546.1" y2="913.4"/>
+<text class="axis-label" x="554.7" y="991.0">IC</text>
+<line class="cusp house-5" x1="645.9" y1="688.1" x2="754.9" y2="828.7"/>
+<line class="cusp house-6" x1="716.2" y1="599.4" x2="878.0" y2="673.8"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="705.7" y1="380.3" x2="859.6" y2="290.8"/>
+<line class="cusp house-9" x1="609.0" y1="288.4" x2="690.5" y2="130.2"/>
+<line class="cusp house-10 axis" x1="473.6" y1="263.5" x2="453.9" y2="86.6"/>
+<text class="axis-label" x="445.3" y="9.0">MC</text>
+<line class="cusp house-11" x1="354.1" y1="311.9" x2="245.1" y2="171.3"/>
+<line class="cusp house-12" x1="283.8" y1="400.6" x2="122.0" y2="326.2"/>
+<text class="house-number" x="245.1" y="568.8">1</text>
+<text class="house-number" x="318.2" y="691.4">2</text>
+<text class="house-number" x="452.1" y="759.6">3</text>
+<text class="house-number" x="599.2" y="744.6">4</text>
+<text class="house-number" x="706.8" y="664.2">5</text>
+<text class="house-number" x="757.9" y="556.5">6</text>
+<text class="house-number" x="754.9" y="431.2">7</text>
+<text class="house-number" x="681.8" y="308.6">8</text>
+<text class="house-number" x="547.9" y="240.4">9</text>
+<text class="house-number" x="400.8" y="255.4">10</text>
+<text class="house-number" x="293.2" y="335.8">11</text>
+<text class="house-number" x="242.1" y="443.5">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-square" x1="691.6" y1="358.9" x2="382.8" y2="292.9"/>
+<line class="aspect aspect-sun-saturn aspect-sextile" x1="691.6" y1="358.9" x2="708.9" y2="614.1"/>
+<line class="aspect aspect-moon-venus aspect-trine" x1="382.8" y1="292.9" x2="737.9" y2="506.8"/>
+<line class="aspect aspect-mercury-mars aspect-sextile" x1="727.6" y1="430.3" x2="672.5" y2="663.9"/>
+<path class="aspect aspect-mercury-jupiter aspect-conjunction" d="M 735.98 437.96 A 244.00 244.00 0 0 0 733.30 428.54"/>
+<line class="aspect aspect-mars-jupiter aspect-sextile" x1="672.5" y1="663.9" x2="730.2" y2="439.5"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="738.3" y1="324.5" x2="691.6" y2="358.9"/><circle class="anchor" cx="691.6" cy="358.9" r="4"/><text class="planet-glyph" x="783.4" y="291.3">☉</text><text class="degree" x="756.0" y="311.4">19°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="354.2" y1="242.4" x2="382.8" y2="292.9"/><circle class="anchor" cx="382.8" cy="292.9" r="4"/><text class="planet-glyph" x="326.6" y="193.7">☽</text><text class="degree" x="343.4" y="223.3">12°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="777.5" y1="396.9" x2="727.6" y2="430.3"/><circle class="anchor" cx="727.6" cy="430.3" r="4"/><text class="planet-glyph" x="830.0" y="377.4">☿</text><text class="degree" x="798.1" y="389.3">0°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="795.9" y1="508.4" x2="737.9" y2="506.8"/><circle class="anchor" cx="737.9" cy="506.8" r="4"/><text class="planet-glyph" x="851.9" y="510.0">♀</text><text class="degree" x="817.9" y="509.0">11°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="714.6" y1="703.9" x2="672.5" y2="663.9"/><circle class="anchor" cx="672.5" cy="663.9" r="4"/><text class="planet-glyph" x="755.2" y="742.5">♂</text><text class="degree" x="730.5" y="719.0">29°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="790.2" y1="441.6" x2="730.2" y2="439.5"/><circle class="anchor" cx="730.2" cy="439.5" r="4"/><text class="planet-glyph" x="845.1" y="430.5">♃</text><text class="degree" x="811.7" y="437.3">28°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="759.8" y1="641.9" x2="708.9" y2="614.1"/><circle class="anchor" cx="708.9" cy="614.1" r="4"/><text class="planet-glyph" x="808.9" y="668.8">♄</text><text class="degree" x="779.1" y="652.5">14°</text></g>
+</g>
+<text class="caption" x="24" y="978">Joyce — 10/01/1984 16:00, Belo Horizonte</text>
+</svg>
+  </section>
+  <section class="reading" aria-label="Interpretação">
+    <p class="hint">Toque em um tema para ler — Voltar ou Esc retorna.</p>
+    <div id="tiles">
+      <div class="tiles">
+<button class="tile wheel-tile" type="button" onclick="showWheel()" style="animation-delay:0ms" aria-label="Abrir o mapa">
+  <span class="mini"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" class="bc-wheel" role="img">
+<style>
+.bc-wheel{font-family:'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols',
+  'DejaVu Sans',system-ui,sans-serif}
+.bc-wheel .bg{fill:var(--wheel-bg,#26302F)}
+.bc-wheel .ring{fill:none;stroke:var(--wheel-line,#4F5C5A);stroke-width:1.4}
+.bc-wheel .sign{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .element-fire{fill:var(--wheel-fire,#3C302F)}
+.bc-wheel .element-earth{fill:var(--wheel-earth,#303829)}
+.bc-wheel .element-air{fill:var(--wheel-air,#2A3345)}
+.bc-wheel .element-water{fill:var(--wheel-water,#22403C)}
+.bc-wheel .sign-glyph{fill:var(--wheel-sign-ink,#CFDAD6);font-size:30px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .tick{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .tick.major{stroke:var(--wheel-muted,#7E8E8B);stroke-width:1.4}
+.bc-wheel .cusp{stroke:var(--wheel-line,#4F5C5A);stroke-width:1}
+.bc-wheel .cusp.axis{stroke:var(--wheel-muted,#7E8E8B);stroke-width:2.2}
+.bc-wheel .axis-label{fill:var(--wheel-muted,#A7B6B3);font-size:17px;font-weight:600;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .house-number{fill:var(--wheel-faint,#7E8E8B);font-size:15px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .planet-glyph{fill:var(--wheel-ink,#EFF4F1);font-size:34px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .degree{fill:var(--wheel-muted,#A7B6B3);font-size:14px;
+  text-anchor:middle;dominant-baseline:central}
+.bc-wheel .pointer{stroke:var(--wheel-faint,#7E8E8B);stroke-width:1}
+.bc-wheel .anchor{fill:var(--wheel-ink,#EFF4F1)}
+.bc-wheel .aspect{fill:none;stroke-width:2}
+.bc-wheel .aspect-trine{stroke:var(--wheel-harmonious,#4BF0AC)}
+.bc-wheel .aspect-sextile{stroke:var(--wheel-harmonious,#4BF0AC);stroke-dasharray:5 5}
+.bc-wheel .aspect-square{stroke:var(--wheel-tense,#FF7663)}
+.bc-wheel .aspect-opposition{stroke:var(--wheel-tense,#FF7663);stroke-dasharray:7 5}
+.bc-wheel .aspect-conjunction{stroke:var(--wheel-conjunct,#BCA9FF);stroke-width:4;
+  stroke-linecap:round}
+.bc-wheel .caption{fill:var(--wheel-faint,#7E8E8B);font-size:16px}
+</style>
+<rect class="bg" width="1000" height="1000" rx="12"/>
+<g class="zodiac">
+<path class="sign sign-aries element-fire" d="M 362.52 40.11 A 480.00 480.00 0 0 0 151.00 170.46 L 197.53 214.40 A 416.00 416.00 0 0 1 380.85 101.43 Z"/>
+<text class="sign-glyph" x="265.0" y="118.6">♈</text>
+<path class="sign sign-taurus element-earth" d="M 151.00 170.46 A 480.00 480.00 0 0 0 32.98 389.11 L 95.25 403.90 A 416.00 416.00 0 0 1 197.53 214.40 Z"/>
+<text class="sign-glyph" x="105.8" y="287.2">♉</text>
+<path class="sign sign-gemini element-air" d="M 32.98 389.11 A 480.00 480.00 0 0 0 40.11 637.48 L 101.43 619.15 A 416.00 416.00 0 0 1 95.25 403.90 Z"/>
+<text class="sign-glyph" x="52.2" y="512.8">♊</text>
+<path class="sign sign-cancer element-water" d="M 40.11 637.48 A 480.00 480.00 0 0 0 170.46 849.00 L 214.40 802.47 A 416.00 416.00 0 0 1 101.43 619.15 Z"/>
+<text class="sign-glyph" x="118.6" y="735.0">♋</text>
+<path class="sign sign-leo element-fire" d="M 170.46 849.00 A 480.00 480.00 0 0 0 389.11 967.02 L 403.90 904.75 A 416.00 416.00 0 0 1 214.40 802.47 Z"/>
+<text class="sign-glyph" x="287.2" y="894.2">♌</text>
+<path class="sign sign-virgo element-earth" d="M 389.11 967.02 A 480.00 480.00 0 0 0 637.48 959.89 L 619.15 898.57 A 416.00 416.00 0 0 1 403.90 904.75 Z"/>
+<text class="sign-glyph" x="512.8" y="947.8">♍</text>
+<path class="sign sign-libra element-air" d="M 637.48 959.89 A 480.00 480.00 0 0 0 849.00 829.54 L 802.47 785.60 A 416.00 416.00 0 0 1 619.15 898.57 Z"/>
+<text class="sign-glyph" x="735.0" y="881.4">♎</text>
+<path class="sign sign-scorpio element-water" d="M 849.00 829.54 A 480.00 480.00 0 0 0 967.02 610.89 L 904.75 596.10 A 416.00 416.00 0 0 1 802.47 785.60 Z"/>
+<text class="sign-glyph" x="894.2" y="712.8">♏</text>
+<path class="sign sign-sagittarius element-fire" d="M 967.02 610.89 A 480.00 480.00 0 0 0 959.89 362.52 L 898.57 380.85 A 416.00 416.00 0 0 1 904.75 596.10 Z"/>
+<text class="sign-glyph" x="947.8" y="487.2">♐</text>
+<path class="sign sign-capricorn element-earth" d="M 959.89 362.52 A 480.00 480.00 0 0 0 829.54 151.00 L 785.60 197.53 A 416.00 416.00 0 0 1 898.57 380.85 Z"/>
+<text class="sign-glyph" x="881.4" y="265.0">♑</text>
+<path class="sign sign-aquarius element-air" d="M 829.54 151.00 A 480.00 480.00 0 0 0 610.89 32.98 L 596.10 95.25 A 416.00 416.00 0 0 1 785.60 197.53 Z"/>
+<text class="sign-glyph" x="712.8" y="105.8">♒</text>
+<path class="sign sign-pisces element-water" d="M 610.89 32.98 A 480.00 480.00 0 0 0 362.52 40.11 L 380.85 101.43 A 416.00 416.00 0 0 1 596.10 95.25 Z"/>
+<text class="sign-glyph" x="487.2" y="52.2">♓</text>
+<circle class="ring" cx="500.0" cy="500.0" r="238.0"/>
+</g>
+<g class="ticks">
+<line class="tick major" x1="384.3" y1="112.9" x2="380.9" y2="101.4"/>
+<line class="tick" x1="349.1" y1="119.8" x2="346.6" y2="113.3"/>
+<line class="tick major" x1="318.8" y1="138.9" x2="313.5" y2="128.2"/>
+<line class="tick" x1="285.4" y1="151.8" x2="281.8" y2="145.8"/>
+<line class="tick major" x1="258.9" y1="175.8" x2="251.7" y2="166.2"/>
+<line class="tick" x1="228.2" y1="194.4" x2="223.6" y2="189.1"/>
+<line class="tick major" x1="206.3" y1="222.6" x2="197.5" y2="214.4"/>
+<line class="tick" x1="179.3" y1="246.2" x2="173.8" y2="241.8"/>
+<line class="tick major" x1="162.6" y1="277.9" x2="152.5" y2="271.3"/>
+<line class="tick" x1="140.1" y1="305.7" x2="133.9" y2="302.4"/>
+<line class="tick major" x1="129.1" y1="339.8" x2="118.1" y2="335.1"/>
+<line class="tick" x1="111.8" y1="371.2" x2="105.2" y2="369.0"/>
+<line class="tick major" x1="106.9" y1="406.7" x2="95.3" y2="403.9"/>
+<line class="tick" x1="95.3" y1="440.6" x2="88.4" y2="439.5"/>
+<line class="tick major" x1="96.7" y1="476.3" x2="84.7" y2="475.6"/>
+<line class="tick" x1="91.2" y1="511.7" x2="84.2" y2="511.9"/>
+<line class="tick major" x1="98.7" y1="546.7" x2="86.8" y2="548.1"/>
+<line class="tick" x1="99.4" y1="582.5" x2="92.6" y2="584.0"/>
+<line class="tick major" x1="112.9" y1="615.7" x2="101.4" y2="619.1"/>
+<line class="tick" x1="119.8" y1="650.9" x2="113.3" y2="653.4"/>
+<line class="tick major" x1="138.9" y1="681.2" x2="128.2" y2="686.5"/>
+<line class="tick" x1="151.8" y1="714.6" x2="145.8" y2="718.2"/>
+<line class="tick major" x1="175.8" y1="741.1" x2="166.2" y2="748.3"/>
+<line class="tick" x1="194.4" y1="771.8" x2="189.1" y2="776.4"/>
+<line class="tick major" x1="222.6" y1="793.7" x2="214.4" y2="802.5"/>
+<line class="tick" x1="246.2" y1="820.7" x2="241.8" y2="826.2"/>
+<line class="tick major" x1="277.9" y1="837.4" x2="271.3" y2="847.5"/>
+<line class="tick" x1="305.7" y1="859.9" x2="302.4" y2="866.1"/>
+<line class="tick major" x1="339.8" y1="870.9" x2="335.1" y2="881.9"/>
+<line class="tick" x1="371.2" y1="888.2" x2="369.0" y2="894.8"/>
+<line class="tick major" x1="406.7" y1="893.1" x2="403.9" y2="904.7"/>
+<line class="tick" x1="440.6" y1="904.7" x2="439.5" y2="911.6"/>
+<line class="tick major" x1="476.3" y1="903.3" x2="475.6" y2="915.3"/>
+<line class="tick" x1="511.7" y1="908.8" x2="511.9" y2="915.8"/>
+<line class="tick major" x1="546.7" y1="901.3" x2="548.1" y2="913.2"/>
+<line class="tick" x1="582.5" y1="900.6" x2="584.0" y2="907.4"/>
+<line class="tick major" x1="615.7" y1="887.1" x2="619.1" y2="898.6"/>
+<line class="tick" x1="650.9" y1="880.2" x2="653.4" y2="886.7"/>
+<line class="tick major" x1="681.2" y1="861.1" x2="686.5" y2="871.8"/>
+<line class="tick" x1="714.6" y1="848.2" x2="718.2" y2="854.2"/>
+<line class="tick major" x1="741.1" y1="824.2" x2="748.3" y2="833.8"/>
+<line class="tick" x1="771.8" y1="805.6" x2="776.4" y2="810.9"/>
+<line class="tick major" x1="793.7" y1="777.4" x2="802.5" y2="785.6"/>
+<line class="tick" x1="820.7" y1="753.8" x2="826.2" y2="758.2"/>
+<line class="tick major" x1="837.4" y1="722.1" x2="847.5" y2="728.7"/>
+<line class="tick" x1="859.9" y1="694.3" x2="866.1" y2="697.6"/>
+<line class="tick major" x1="870.9" y1="660.2" x2="881.9" y2="664.9"/>
+<line class="tick" x1="888.2" y1="628.8" x2="894.8" y2="631.0"/>
+<line class="tick major" x1="893.1" y1="593.3" x2="904.7" y2="596.1"/>
+<line class="tick" x1="904.7" y1="559.4" x2="911.6" y2="560.5"/>
+<line class="tick major" x1="903.3" y1="523.7" x2="915.3" y2="524.4"/>
+<line class="tick" x1="908.8" y1="488.3" x2="915.8" y2="488.1"/>
+<line class="tick major" x1="901.3" y1="453.3" x2="913.2" y2="451.9"/>
+<line class="tick" x1="900.6" y1="417.5" x2="907.4" y2="416.0"/>
+<line class="tick major" x1="887.1" y1="384.3" x2="898.6" y2="380.9"/>
+<line class="tick" x1="880.2" y1="349.1" x2="886.7" y2="346.6"/>
+<line class="tick major" x1="861.1" y1="318.8" x2="871.8" y2="313.5"/>
+<line class="tick" x1="848.2" y1="285.4" x2="854.2" y2="281.8"/>
+<line class="tick major" x1="824.2" y1="258.9" x2="833.8" y2="251.7"/>
+<line class="tick" x1="805.6" y1="228.2" x2="810.9" y2="223.6"/>
+<line class="tick major" x1="777.4" y1="206.3" x2="785.6" y2="197.5"/>
+<line class="tick" x1="753.8" y1="179.3" x2="758.2" y2="173.8"/>
+<line class="tick major" x1="722.1" y1="162.6" x2="728.7" y2="152.5"/>
+<line class="tick" x1="694.3" y1="140.1" x2="697.6" y2="133.9"/>
+<line class="tick major" x1="660.2" y1="129.1" x2="664.9" y2="118.1"/>
+<line class="tick" x1="628.8" y1="111.8" x2="631.0" y2="105.2"/>
+<line class="tick major" x1="593.3" y1="106.9" x2="596.1" y2="95.3"/>
+<line class="tick" x1="559.4" y1="95.3" x2="560.5" y2="88.4"/>
+<line class="tick major" x1="523.7" y1="96.7" x2="524.4" y2="84.7"/>
+<line class="tick" x1="488.3" y1="91.2" x2="488.1" y2="84.2"/>
+<line class="tick major" x1="453.3" y1="98.7" x2="451.9" y2="86.8"/>
+<line class="tick" x1="417.5" y1="99.4" x2="416.0" y2="92.6"/>
+</g>
+<g class="houses">
+<line class="cusp house-1 axis" x1="262.0" y1="500.0" x2="84.0" y2="500.0"/>
+<text class="axis-label" x="6.0" y="500.0">ASC</text>
+<line class="cusp house-2" x1="294.3" y1="619.7" x2="140.4" y2="709.2"/>
+<line class="cusp house-3" x1="391.0" y1="711.6" x2="309.5" y2="869.8"/>
+<line class="cusp house-4 axis" x1="526.4" y1="736.5" x2="546.1" y2="913.4"/>
+<text class="axis-label" x="554.7" y="991.0">IC</text>
+<line class="cusp house-5" x1="645.9" y1="688.1" x2="754.9" y2="828.7"/>
+<line class="cusp house-6" x1="716.2" y1="599.4" x2="878.0" y2="673.8"/>
+<line class="cusp house-7 axis" x1="738.0" y1="500.0" x2="916.0" y2="500.0"/>
+<text class="axis-label" x="994.0" y="500.0">DSC</text>
+<line class="cusp house-8" x1="705.7" y1="380.3" x2="859.6" y2="290.8"/>
+<line class="cusp house-9" x1="609.0" y1="288.4" x2="690.5" y2="130.2"/>
+<line class="cusp house-10 axis" x1="473.6" y1="263.5" x2="453.9" y2="86.6"/>
+<text class="axis-label" x="445.3" y="9.0">MC</text>
+<line class="cusp house-11" x1="354.1" y1="311.9" x2="245.1" y2="171.3"/>
+<line class="cusp house-12" x1="283.8" y1="400.6" x2="122.0" y2="326.2"/>
+<text class="house-number" x="245.1" y="568.8">1</text>
+<text class="house-number" x="318.2" y="691.4">2</text>
+<text class="house-number" x="452.1" y="759.6">3</text>
+<text class="house-number" x="599.2" y="744.6">4</text>
+<text class="house-number" x="706.8" y="664.2">5</text>
+<text class="house-number" x="757.9" y="556.5">6</text>
+<text class="house-number" x="754.9" y="431.2">7</text>
+<text class="house-number" x="681.8" y="308.6">8</text>
+<text class="house-number" x="547.9" y="240.4">9</text>
+<text class="house-number" x="400.8" y="255.4">10</text>
+<text class="house-number" x="293.2" y="335.8">11</text>
+<text class="house-number" x="242.1" y="443.5">12</text>
+</g>
+<g class="aspects">
+<line class="aspect aspect-sun-moon aspect-square" x1="691.6" y1="358.9" x2="382.8" y2="292.9"/>
+<line class="aspect aspect-sun-saturn aspect-sextile" x1="691.6" y1="358.9" x2="708.9" y2="614.1"/>
+<line class="aspect aspect-moon-venus aspect-trine" x1="382.8" y1="292.9" x2="737.9" y2="506.8"/>
+<line class="aspect aspect-mercury-mars aspect-sextile" x1="727.6" y1="430.3" x2="672.5" y2="663.9"/>
+<path class="aspect aspect-mercury-jupiter aspect-conjunction" d="M 735.98 437.96 A 244.00 244.00 0 0 0 733.30 428.54"/>
+<line class="aspect aspect-mars-jupiter aspect-sextile" x1="672.5" y1="663.9" x2="730.2" y2="439.5"/>
+</g>
+<g class="planets">
+<g class="planet planet-sun"><line class="pointer" x1="738.3" y1="324.5" x2="691.6" y2="358.9"/><circle class="anchor" cx="691.6" cy="358.9" r="4"/><text class="planet-glyph" x="783.4" y="291.3">☉</text><text class="degree" x="756.0" y="311.4">19°</text></g>
+<g class="planet planet-moon"><line class="pointer" x1="354.2" y1="242.4" x2="382.8" y2="292.9"/><circle class="anchor" cx="382.8" cy="292.9" r="4"/><text class="planet-glyph" x="326.6" y="193.7">☽</text><text class="degree" x="343.4" y="223.3">12°</text></g>
+<g class="planet planet-mercury"><line class="pointer" x1="777.5" y1="396.9" x2="727.6" y2="430.3"/><circle class="anchor" cx="727.6" cy="430.3" r="4"/><text class="planet-glyph" x="830.0" y="377.4">☿</text><text class="degree" x="798.1" y="389.3">0°</text></g>
+<g class="planet planet-venus"><line class="pointer" x1="795.9" y1="508.4" x2="737.9" y2="506.8"/><circle class="anchor" cx="737.9" cy="506.8" r="4"/><text class="planet-glyph" x="851.9" y="510.0">♀</text><text class="degree" x="817.9" y="509.0">11°</text></g>
+<g class="planet planet-mars"><line class="pointer" x1="714.6" y1="703.9" x2="672.5" y2="663.9"/><circle class="anchor" cx="672.5" cy="663.9" r="4"/><text class="planet-glyph" x="755.2" y="742.5">♂</text><text class="degree" x="730.5" y="719.0">29°</text></g>
+<g class="planet planet-jupiter"><line class="pointer" x1="790.2" y1="441.6" x2="730.2" y2="439.5"/><circle class="anchor" cx="730.2" cy="439.5" r="4"/><text class="planet-glyph" x="845.1" y="430.5">♃</text><text class="degree" x="811.7" y="437.3">28°</text></g>
+<g class="planet planet-saturn"><line class="pointer" x1="759.8" y1="641.9" x2="708.9" y2="614.1"/><circle class="anchor" cx="708.9" cy="614.1" r="4"/><text class="planet-glyph" x="808.9" y="668.8">♄</text><text class="degree" x="779.1" y="652.5">14°</text></g>
+</g>
+<text class="caption" x="24" y="978">Joyce — 10/01/1984 16:00, Belo Horizonte</text>
+</svg></span>
+  <span class="flabel">Mapa</span>
+</button>
+<button class="tile" type="button" onclick="show('visao-geral')" style="animation-delay:40ms" data-section="visao-geral" data-planets="sun moon mercury venus jupiter saturn" data-aspects="sun-moon" data-houses="7 8 10">
+  <span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☉☽</span></span>
+  <h3>Visão geral do mapa</h3>
+  <span class="face"><span class="fglyph">🌟</span><span class="frule"></span><span class="flabel">Visão geral</span></span>
+</button>
+<button class="tile" type="button" onclick="show('identidade-capricornio-gemeos')" style="animation-delay:80ms" data-section="identidade-capricornio-gemeos" data-planets="sun saturn" data-aspects="sun-saturn" data-houses="1 8">
+  <span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic aspect">☉♄</span><span class="ic house">⌂</span></span>
+  <h3>Identidade: a estrutura e a inquietação</h3>
+  <span class="face"><span class="fglyph">👤</span><span class="frule"></span><span class="flabel">Identidade</span></span>
+</button>
+<button class="tile" type="button" onclick="show('vocacao-lua-aries')" style="animation-delay:120ms" data-section="vocacao-lua-aries" data-planets="moon sun venus" data-aspects="sun-moon moon-venus" data-houses="10">
+  <span class="ics"><span class="ic theme">💼</span><span class="ic body">☽</span><span class="ic body">☉</span><span class="ic body">♀</span><span class="ic aspect">☉☽</span></span>
+  <h3>Vocação e imagem pública</h3>
+  <span class="face"><span class="fglyph">💼</span><span class="frule"></span><span class="flabel">Carreira</span></span>
+</button>
+<button class="tile" type="button" onclick="show('amor-parcerias')" style="animation-delay:160ms" data-section="amor-parcerias" data-planets="venus jupiter mercury mars" data-aspects="mars-jupiter moon-venus" data-houses="5 7">
+  <span class="ics"><span class="ic theme">💞</span><span class="ic body">♀</span><span class="ic body">♃</span><span class="ic body">☿</span><span class="ic aspect">♂♃</span></span>
+  <h3>Amor e parcerias</h3>
+  <span class="face"><span class="fglyph">💞</span><span class="frule"></span><span class="flabel">Amor</span></span>
+</button>
+<button class="tile" type="button" onclick="show('mente-comunicacao')" style="animation-delay:200ms" data-section="mente-comunicacao" data-planets="mercury jupiter mars" data-aspects="mercury-jupiter mercury-mars" data-houses="1 7">
+  <span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">♃</span><span class="ic body">♂</span><span class="ic aspect">☿♃</span></span>
+  <h3>Mente e comunicação</h3>
+  <span class="face"><span class="fglyph">🧠</span><span class="frule"></span><span class="flabel">Mente</span></span>
+</button>
+<button class="tile" type="button" onclick="show('tensoes-centrais')" style="animation-delay:240ms" data-section="tensoes-centrais" data-planets="sun moon saturn mars" data-aspects="sun-moon sun-saturn mercury-mars" data-houses="6 8">
+  <span class="ics"><span class="ic theme">⚔️</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">♄</span><span class="ic aspect">☉☽</span></span>
+  <h3>Tensões centrais e pontos de atenção</h3>
+  <span class="face"><span class="fglyph">⚔️</span><span class="frule"></span><span class="flabel">Desafios</span></span>
+</button>
+<button class="tile" type="button" onclick="show('transformacao-crescimento')" style="animation-delay:280ms" data-section="transformacao-crescimento" data-planets="sun saturn venus jupiter" data-aspects="sun-saturn" data-houses="6 8">
+  <span class="ics"><span class="ic theme">🌱</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic body">♀</span><span class="ic aspect">☉♄</span></span>
+  <h3>Transformação e crescimento</h3>
+  <span class="face"><span class="fglyph">🌱</span><span class="frule"></span><span class="flabel">Crescimento</span></span>
+</button>
+      </div>
+      <div class="groupsep" aria-hidden="true">✦</div>
+      <button class="tile databar" type="button" onclick="show('dados')" style="animation-delay:320ms"><span class="dg">📋</span><span class="dl">Dados do mapa</span><span class="dch">›</span></button>
+    </div>
+<article class="detail" id="d-visao-geral" data-section="visao-geral" data-planets="sun moon mercury venus jupiter saturn" data-aspects="sun-moon" data-houses="7 8 10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌟</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">☿</span><span class="ic aspect">☉☽</span></span>Visão geral do mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">☿ Mercury</span><span class="chip">♀ Venus</span><span class="chip">♃ Jupiter</span><span class="chip">♄ Saturn</span><span class="chip">☉ □ ☽ Sun–Moon</span><span class="chip">⌂ Casa 7</span><span class="chip">⌂ Casa 8</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>Joyce, seu mapa combina peso e leveza de um jeito interessante. O Sol em Capricórnio na Casa 8 dá seriedade, resistência e uma necessidade de lidar com temas profundos — não superficiais. Mas o Ascendente em Gêmeos e um punhado de planetas angulares (Lua, Mercúrio, Vênus e Júpiter) trazem movimento, curiosidade e uma presença que quer se relacionar, comunicar e circular. Há em você uma tensão fundamental entre a estrutura capricorniana, que quer controlar e construir devagar, e a inquietação geminiana e ariana, que quer velocidade, novidade e ação. Essa é a espinha dorsal do seu temperamento: alguém capaz de disciplina real, mas que se irrita com a lentidão e se distrai facilmente.</p><div class="sep" aria-hidden="true">☉ □ ☽</div><p>A presença forte de planetas nas casas de relacionamento (Mercúrio, Vênus e Júpiter na região da Casa 7) mostra que os outros são espelhos importantes para você. Você se descobre em parceria, seja amorosa, seja de trabalho, e tende a projetar nos outros qualidades que ainda não reconheceu como suas. Ao mesmo tempo, a Lua em Áries na Casa 10 revela uma pessoa que precisa de reconhecimento público, que age por impulso emocional e que não gosta de depender de ninguém. Existe aí uma contradição saudável e cansativa ao mesmo tempo: você quer autonomia total e, ao mesmo tempo, se completa através do vínculo.</p><div class="sep" aria-hidden="true">☉ · ☽ · ☿</div><p>O grande aprendizado deste mapa é integrar o que parece oposto. O quadratura entre Sol e Lua indica que sua vontade consciente (Capricórnio: paciência, cálculo, longo prazo) e suas reações emocionais (Áries: imediatismo, coragem, impaciência) frequentemente puxam para lados diferentes. Na prática, isso aparece como momentos em que você planeja cuidadosamente algo e depois sabota o plano por não aguentar esperar, ou o contrário: sente vontade de agir e se trava por excesso de responsabilidade. Não é um defeito a corrigir, mas uma dinâmica a administrar. Quando você aprende a dar vazão à impulsividade ariana em áreas seguras e a reservar a disciplina capricorniana para o que realmente importa, os dois lados param de brigar e começam a se alimentar.</p><div class="sep" aria-hidden="true">🌟</div><p>Outro fio condutor é a profundidade. O Sol na Casa 8, Saturno em Escorpião na Casa 6 e o próprio ascendente mutável apontam alguém que não se satisfaz com respostas fáceis. Você tende a mergulhar em crises, transformações e temas tabu — dinheiro compartilhado, intimidade, poder, morte simbólica de fases da vida. Isso pode gerar intensidade e até um traço de controle ou desconfiança, mas também é a fonte da sua capacidade de renascer. Poucas pessoas conseguem se reinventar tantas vezes quanto você, desde que não se agarrem ao medo de perder o controle.</p><div class="sep" aria-hidden="true">☉ □ ☽</div><p>Ao longo deste texto, vamos olhar com honestidade tanto os seus talentos quanto os pontos que costumam travar você. A ideia não é te bajular nem te assustar, mas te dar um retrato utilizável: onde está a força bruta do seu mapa, onde está o atrito, e o que significa lidar bem com cada coisa. Seu mapa não é fácil, mas é fértil — há material de sobra para construir uma vida com sentido, contanto que você aceite conviver com as próprias contradições em vez de tentar eliminá-las.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-capricornio-gemeos',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-identidade-capricornio-gemeos" data-section="identidade-capricornio-gemeos" data-planets="sun saturn" data-aspects="sun-saturn" data-houses="1 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">👤</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic aspect">☉♄</span><span class="ic house">⌂</span></span>Identidade: a estrutura e a inquietação</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">♄ Saturn</span><span class="chip">☉ ⚹ ♄ Sun–Saturn</span><span class="chip">⌂ Casa 1</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>Seu Sol em Capricórnio fala de alguém que amadurece cedo, que assume responsabilidades e que mede o próprio valor pelo que consegue realizar concretamente. Você tem ambição real, mesmo que às vezes discreta, e uma capacidade de suportar dificuldades que impressiona quem está por perto. Capricórnio não desiste fácil; ele calcula, persiste e vai construindo tijolo por tijolo. Na Casa 8, essa energia se aprofunda: você tende a levar a sério temas que outros evitam, tem faro para o que está escondido e uma força de regeneração notável em crises. Não é raro que pessoas com esse posicionamento passem por transformações pesadas e saiam mais sólidas do outro lado.</p><div class="sep" aria-hidden="true">☉ ⚹ ♄</div><p>Mas o Sol em Capricórnio também carrega sombras conhecidas: excesso de autocrítica, tendência a adiar o prazer em nome do dever, dificuldade de pedir ajuda e uma sensação recorrente de que nunca é suficiente. Você pode se cobrar de um jeito que ninguém mais te cobra, e confundir seriedade com valor. Há dias em que a rigidez vira sua prisão: você se recusa a mudar de rota mesmo quando a rota claramente não está funcionando, só para não admitir que errou. Reconhecer que descansar, errar e se divertir também fazem parte da construção é um trabalho de vida inteira para o capricorniano.</p><div class="sep" aria-hidden="true">☉ · ♄</div><p>Sobre esse alicerce sério pousa um Ascendente em Gêmeos, que muda bastante a fotografia. Para o mundo, você aparece mais leve, comunicativa, curiosa e adaptável do que se sente por dentro. Gêmeos gosta de variedade, conversa, informação e trânsito entre mundos diferentes. Isso te dá versatilidade e charme social, mas também dispersão: você começa muitas coisas, se entedia rápido e pode ter dificuldade de aprofundar quando a novidade passa. A combinação Capricórnio-Sol com Gêmeos-Ascendente cria alguém que quer, ao mesmo tempo, dominar um assunto até o fundo e provar de tudo um pouco. O risco é viver dividida entre a especialista e a curiosa eterna.</p><div class="sep" aria-hidden="true">👤</div><p>O sextil entre Sol e Saturno reforça o lado disciplinado e confiável do seu caráter. É um aspecto de maturidade: você consegue transformar esforço em resultado, honrar compromissos e ser aquela pessoa em quem os outros se apoiam. A contrapartida é que você pode assumir peso demais, se tornar excessivamente séria e esquecer que a vida não é só responsabilidade. Como esse Saturno está em Escorpião na Casa 6, há ainda uma exigência ligada ao corpo, à rotina e à saúde — sinais de que o estresse tende a se somatizar quando você não desacelera.</p><div class="sep" aria-hidden="true">☉ ⚹ ♄</div><p>Lidar bem com essa identidade significa não escolher entre a estrutura e a inquietação, mas dar lugar aos dois. Deixe o Capricórnio cuidar dos projetos de longo prazo, das metas que importam e da sua palavra dada. Deixe o Gêmeos alimentar a mente, os contatos e a curiosidade sem culpa. E cuidado com os dois vícios opostos: virar uma pessoa dura e amargurada de tanto trabalhar, ou virar uma pessoa dispersa que nunca conclui nada. Você funciona melhor quando tem uma direção clara e liberdade de movimento dentro dela — disciplina com respiro, seriedade com humor.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('visao-geral',true)">‹ anterior</button><button class="btn" type="button" onclick="show('vocacao-lua-aries',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-vocacao-lua-aries" data-section="vocacao-lua-aries" data-planets="moon sun venus" data-aspects="sun-moon moon-venus" data-houses="10">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💼</span><span class="ic body">☽</span><span class="ic body">☉</span><span class="ic body">♀</span><span class="ic aspect">☉☽</span></span>Vocação e imagem pública</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☽ Moon</span><span class="chip">☉ Sun</span><span class="chip">♀ Venus</span><span class="chip">☉ □ ☽ Sun–Moon</span><span class="chip">☽ △ ♀ Moon–Venus</span><span class="chip">⌂ Casa 10</span>
+  <div class="body"><p>Com a Lua em Áries na Casa 10, sua vida profissional e sua imagem pública têm um peso emocional enorme. Você não trabalha apenas por dinheiro ou status; você precisa sentir que está fazendo algo próprio, que carrega sua marca, que te dá a sensação de estar na linha de frente. A Casa 10 é o topo do mapa, a vocação, o lugar onde você quer ser vista e reconhecida — e ter a Lua ali significa que seu bem-estar emocional depende, em boa medida, de se sentir realizada no mundo. Sem uma direção profissional que te acenda, você fica irritada e sem chão, ainda que a vida pessoal esteja em ordem.</p><div class="sep" aria-hidden="true">☉ □ ☽</div><p>Áries traz coragem, iniciativa e uma capacidade de começar do zero que é rara. Você lidera bem, decide rápido e não tem medo de bater de frente quando acredita em algo. Em ambientes de trabalho, tende a ser a pessoa que puxa a ação, que não fica esperando permissão. Isso é uma força poderosa, especialmente combinada com a disciplina capricorniana do seu Sol: você tem tanto o impulso de iniciar quanto a resistência de sustentar. Mas a Lua em Áries também é impaciente e reativa. Você pode explodir quando contrariada, tomar decisões de carreira no calor do momento e ter dificuldade de trabalhar sob chefias que você não respeita. A independência é vital, e obedecer sem sentido te sufoca.</p><div class="sep" aria-hidden="true">☽ △ ♀</div><p>Aqui reaparece a quadratura Sol-Lua, e ela é especialmente visível na vida profissional. O Sol em Capricórnio quer segurança, hierarquia, progressão lenta e sólida; a Lua em Áries quer autonomia, velocidade e resultado imediato. Você pode se ver oscilando entre aceitar posições estáveis que te entediam e se jogar em aventuras impulsivas que te esgotam. O ponto de atenção é não sabotar construções de longo prazo por explosões de impaciência, nem sufocar sua necessidade de iniciativa em nome de uma estabilidade que te deprime. Encontrar trabalhos que ofereçam estrutura e espaço para liderar é o caminho do meio.</p><div class="sep" aria-hidden="true">☽ · ☉ · ♀</div><p>A Lua em Áries também recebe um trígono de Vênus, o que suaviza bastante essa configuração. Isso indica que você tem carisma, senso estético e habilidade de tornar suas emoções atraentes para os outros. Sua impulsividade vem embrulhada em charme, e você consegue conquistar apoio para suas iniciativas. Esse aspecto ajuda em carreiras que envolvem público, criatividade, relações e comunicação — áreas onde sua espontaneidade emocional vira magnetismo em vez de conflito. É um recurso valioso para equilibrar a aspereza que a Lua ariana pode ter sozinha.</p><div class="sep" aria-hidden="true">💼</div><p>Lidar bem com essa vocação significa aceitar que você precisa de protagonismo e não se envergonhar disso. Buscar uma carreira morna, só para agradar ou por segurança, é a receita para a sua infelicidade. Ao mesmo tempo, é preciso domar a impulsividade: aprender a esperar o momento certo, a não queimar pontes com quem discorda de você e a canalizar a raiva em ação construtiva em vez de conflito. Sua imagem pública tende a ser forte e memorável — a pergunta é se você vai construir uma reputação de pessoa corajosa e confiável, ou de alguém explosivo e inconstante. A escolha está, em boa parte, na sua capacidade de somar o fogo da Lua à paciência do Sol.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('identidade-capricornio-gemeos',true)">‹ anterior</button><button class="btn" type="button" onclick="show('amor-parcerias',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-amor-parcerias" data-section="amor-parcerias" data-planets="venus jupiter mercury mars" data-aspects="mars-jupiter moon-venus" data-houses="5 7">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">💞</span><span class="ic body">♀</span><span class="ic body">♃</span><span class="ic body">☿</span><span class="ic aspect">♂♃</span></span>Amor e parcerias</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">♀ Venus</span><span class="chip">♃ Jupiter</span><span class="chip">☿ Mercury</span><span class="chip">♂ Mars</span><span class="chip">♂ ⚹ ♃ Mars–Jupiter</span><span class="chip">☽ △ ♀ Moon–Venus</span><span class="chip">⌂ Casa 5</span><span class="chip">⌂ Casa 7</span>
+  <div class="body"><p>O eixo dos relacionamentos é um dos mais carregados do seu mapa. Com Vênus e Júpiter em Sagitário e Mercúrio em Capricórnio ocupando a região da Casa 7, a área das parcerias é enorme, viva e cheia de expectativa. Você é uma pessoa que floresce no vínculo — não à toa tantos planetas se concentram ali. Vênus em Sagitário busca no amor liberdade, aventura, crescimento e sentido; você quer um parceiro que seja também companheiro de estrada, com quem aprender, viajar e expandir horizontes. Nada mata mais rápido seu interesse do que uma relação claustrofóbica, repetitiva ou pequena demais para seus sonhos.</p><div class="sep" aria-hidden="true">♂ ⚹ ♃</div><p>Júpiter junto de Vênus em Sagitário amplifica essa generosidade afetiva. Você ama com entusiasmo, é acolhedora, otimista nos vínculos e capaz de enxergar o melhor no outro. Mas essa mesma combinação traz o risco do excesso: idealizar demais quem você ama, esperar mais do que a pessoa pode dar, ou se apaixonar pela promessa e não pela realidade. Júpiter em parceria também pode indicar uma tendência a exagerar — seja nas expectativas, seja na dificuldade de se comprometer com uma só direção quando o mundo parece cheio de possibilidades. Sagitário, afinal, gosta do horizonte aberto, e isso às vezes entra em conflito com a intimidade estável.</p><div class="sep" aria-hidden="true">☽ △ ♀</div><p>Já o Mercúrio em Capricórnio nessa área traz seriedade à forma como você se comunica nos relacionamentos. Você quer conversas concretas, compromissos claros e um parceiro maduro, com quem possa construir algo real. Há aqui uma tensão saborosa: metade de você quer aventura e expansão (Sagitário), a outra metade quer estrutura e segurança (Capricórnio). Em parceria, você pode atrair pessoas que representam um desses polos e depois cobrar delas o polo oposto. O trabalho é reconhecer que ambas as necessidades são suas e não terceirizar essa contradição para o par.</p><div class="sep" aria-hidden="true">♀ · ♃ · ☿</div><p>Mars em Libra na Casa 5 fala do seu jeito de desejar e de viver o romance e o prazer. Você é sedutora, valoriza a harmonia e a estética no jogo amoroso, e prefere a diplomacia ao confronto direto na paquera. O sextil de Marte com Júpiter dá calor, generosidade e sorte nos encontros. Mas Marte em Libra também pode indicar dificuldade em afirmar o próprio desejo com clareza — você às vezes espera o outro tomar a iniciativa ou evita conflitos que precisariam ser encarados, acumulando ressentimento silencioso. Como sua Lua em Áries é justamente o oposto disso (direta, impulsiva), pode haver um descompasso entre o que você sente e o que você expressa nos vínculos.</p><div class="sep" aria-hidden="true">💞</div><p>Lidar bem com o amor, no seu caso, é integrar liberdade e compromisso em vez de vê-los como inimigos. O parceiro ideal não é o que te prende nem o que te deixa à deriva, mas o que caminha ao seu lado numa direção compartilhada. Cuidado com a idealização jupiteriana, que pode te fazer insistir em quem não corresponde, e com a evitação de conflito de Marte em Libra, que adia conversas necessárias. Sua maior força afetiva é a capacidade de crescer junto de alguém — desde que você seja honesta sobre suas duas necessidades opostas e não peça ao outro que resolva por você uma contradição que é, no fundo, interna.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('vocacao-lua-aries',true)">‹ anterior</button><button class="btn" type="button" onclick="show('mente-comunicacao',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-mente-comunicacao" data-section="mente-comunicacao" data-planets="mercury jupiter mars" data-aspects="mercury-jupiter mercury-mars" data-houses="1 7">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🧠</span><span class="ic body">☿</span><span class="ic body">♃</span><span class="ic body">♂</span><span class="ic aspect">☿♃</span></span>Mente e comunicação</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☿ Mercury</span><span class="chip">♃ Jupiter</span><span class="chip">♂ Mars</span><span class="chip">☿ ☌ ♃ Mercury–Jupiter</span><span class="chip">☿ ⚹ ♂ Mercury–Mars</span><span class="chip">⌂ Casa 1</span><span class="chip">⌂ Casa 7</span>
+  <div class="body"><p>Sua mente é uma das áreas mais ricas do mapa, e também uma das mais contraditórias. O Ascendente em Gêmeos já indica uma inteligência ágil, curiosa, comunicativa, que aprende rápido e se interessa por muita coisa. Você pensa em movimento, gosta de trocar ideias, de ler, de conversar, de conectar assuntos aparentemente distantes. Há em você um dom natural para lidar com informação e com palavras, e provavelmente uma facilidade de se adaptar a diferentes contextos e interlocutores. Essa versatilidade mental é um recurso valioso em quase qualquer área da vida.</p><div class="sep" aria-hidden="true">☿ ☌ ♃</div><p>Mas seu Mercúrio, o regente do seu Ascendente e portanto peça-chave do mapa, está em Capricórnio — bem diferente do estilo geminiano. Isso significa que, por baixo da curiosidade dispersa, existe uma mente estruturada, estratégica e que quer resultados práticos. Você não pensa só por prazer; você pensa para resolver, para construir, para chegar a algum lugar concreto. Mercúrio em Capricórnio é sério, cauteloso, bom em planejamento de longo prazo e desconfiado de ideias que não têm aplicação. A junção Gêmeos-Ascendente com Mercúrio-Capricórnio te dá uma inteligência que é, ao mesmo tempo, rápida e profunda, curiosa e realista — uma combinação poderosa quando os dois lados colaboram.</p><div class="sep" aria-hidden="true">☿ ⚹ ♂</div><p>O risco dessa configuração é a autocrítica mental e uma certa dureza no pensamento. Mercúrio em Capricórnio pode ser pessimista, tender a ver primeiro os problemas e as limitações, e travar diante de ideias que ainda não estão perfeitamente amarradas. Você pode se cobrar para só falar quando tem certeza, o que às vezes te faz calar quando deveria arriscar. Ou, no outro extremo, a inquietação geminiana faz você pular de assunto em assunto sem consolidar nada. O equilíbrio está em usar a agilidade de Gêmeos para explorar e a solidez de Capricórnio para aprofundar e concluir.</p><div class="sep" aria-hidden="true">☿ · ♃ · ♂</div><p>O Mercúrio está conjunto a Júpiter, o que amplia sua visão: você não pensa só no detalhe, consegue enxergar o quadro grande, filosofar, dar sentido e conectar o prático ao amplo. É um ótimo aspecto para ensino, escrita, estudo e qualquer atividade que una precisão e visão. O ponto de atenção é o exagero: Júpiter pode inflar as ideias, te fazer prometer mais do que consegue cumprir, ou generalizar rápido demais. Às vezes você tem certeza absoluta de uma conclusão e ignora os dados que a contrariam. Cultivar humildade intelectual — reconhecer que você pode estar errada — protege você da arrogância que essa combinação às vezes gera.</p><div class="sep" aria-hidden="true">🧠</div><p>O sextil entre Mercúrio e Marte dá vigor à sua fala e ao seu raciocínio: você pensa com energia, defende suas posições com firmeza e tem capacidade de decisão mental. Isso te ajuda a passar do pensamento à ação, algo que nem todo mundo consegue. A contrapartida é uma possível impaciência ou aspereza no debate — você pode ser cortante quando discordam de você. Lidar bem com sua mente significa unir esses recursos: a curiosidade que explora, a estrutura que consolida, a visão que dá sentido e a energia que decide. Quando esses quatro elementos trabalham juntos, você é capaz de raciocínios ao mesmo tempo criativos e sólidos, e de comunicar ideias de um jeito que convence sem atropelar.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('amor-parcerias',true)">‹ anterior</button><button class="btn" type="button" onclick="show('tensoes-centrais',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-tensoes-centrais" data-section="tensoes-centrais" data-planets="sun moon saturn mars" data-aspects="sun-moon sun-saturn mercury-mars" data-houses="6 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">⚔️</span><span class="ic body">☉</span><span class="ic body">☽</span><span class="ic body">♄</span><span class="ic aspect">☉☽</span></span>Tensões centrais e pontos de atenção</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">☽ Moon</span><span class="chip">♄ Saturn</span><span class="chip">♂ Mars</span><span class="chip">☉ □ ☽ Sun–Moon</span><span class="chip">☉ ⚹ ♄ Sun–Saturn</span><span class="chip">☿ ⚹ ♂ Mercury–Mars</span><span class="chip">⌂ Casa 6</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>Se há um nó a ser trabalhado a vida inteira no seu mapa, ele é a quadratura entre Sol e Lua. Essa é uma tensão estrutural entre quem você quer ser (Sol em Capricórnio: paciente, responsável, construtor de longo prazo) e como você reage emocionalmente (Lua em Áries: imediata, impulsiva, combativa). Na prática, isso aparece como um conflito interno recorrente entre cabeça e vontade. Você planeja com calma e depois estraga o plano por impaciência; ou sente um impulso claro e o reprime por senso de dever, acumulando frustração. Pessoas com esse aspecto costumam viver uma sensação de estar sempre em desacordo consigo mesmas, como se duas partes puxassem em direções opostas. Não é algo que se resolve de uma vez; é algo que se administra ao longo da vida, aprendendo a dar a cada parte o seu espaço e o seu momento.</p><div class="sep" aria-hidden="true">☉ □ ☽</div><p>Essa quadratura também tende a afetar as relações com figuras de autoridade e com a família de origem — o Sol e a Lua representam, entre outras coisas, os modelos parentais. É possível que você tenha internalizado mensagens contraditórias: de um lado a exigência de ser madura, contida e responsável; de outro a necessidade de ser independente, corajosa e de se afirmar. Reconciliar essas duas vozes internas é parte do seu trabalho de individuação. Quando você aceita que pode ser disciplinada sem se anular e impulsiva sem se descontrolar, a tensão vira combustível em vez de paralisia.</p><div class="sep" aria-hidden="true">☉ ⚹ ♄</div><p>Outro ponto de atenção é Saturno em Escorpião na Casa 6. Essa posição fala de uma relação exigente com o trabalho cotidiano, a saúde e a rotina. Você tende a se cobrar muito no dia a dia, a trabalhar demais e a ignorar sinais do corpo até que eles gritem. Escorpião intensifica: emoções reprimidas e estresse acumulado tendem a se somatizar, virando tensão física, problemas de sono ou desgaste crônico. O aprendizado aqui é construir uma rotina sustentável, encarar de frente o que você costuma varrer para debaixo do tapete e entender que cuidar do corpo não é fraqueza, é estratégia. Saturno recompensa quem enfrenta o trabalho duro com constância, mas pune quem se esgota por orgulho.</p><div class="sep" aria-hidden="true">☿ ⚹ ♂</div><p>Há ainda o peso do Sol em Capricórnio na Casa 8 combinado com esse Saturno: uma tendência ao controle, à desconfiança e à dificuldade de se entregar e de depender dos outros em temas de intimidade profunda, dinheiro compartilhado e poder. Você pode segurar as rédeas com tanta força que perde a leveza da parceria e da entrega. Aprender a soltar, a confiar e a permitir vulnerabilidade é um dos grandes desafios do seu mapa — e uma das maiores fontes de transformação, se você aceitar o processo.</p><div class="sep" aria-hidden="true">☉ · ☽ · ♄</div><p>O lado bom é que seu mapa tem recursos claros para lidar com essas tensões: os sextis de Sol-Saturno, Mercúrio-Marte e Marte-Júpiter, além do trígono Lua-Vênus, funcionam como amortecedores. Você tem disciplina, energia mental, charme e capacidade de ação para trabalhar as dificuldades. Nenhuma dessas tensões é uma sentença; todas são convites a um trabalho consciente. Lidar bem com elas não significa eliminá-las, e sim parar de fingir que não existem — nomear a contradição, dar-lhe forma útil e conviver com ela sem se despedaçar.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('mente-comunicacao',true)">‹ anterior</button><button class="btn" type="button" onclick="show('transformacao-crescimento',true)" style="margin-left:auto">próximo ›</button></div>
+</article>
+<article class="detail" id="d-transformacao-crescimento" data-section="transformacao-crescimento" data-planets="sun saturn venus jupiter" data-aspects="sun-saturn" data-houses="6 8">
+  <div class="top">
+    <h3><span class="ics"><span class="ic theme">🌱</span><span class="ic body">☉</span><span class="ic body">♄</span><span class="ic body">♀</span><span class="ic aspect">☉♄</span></span>Transformação e crescimento</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <span class="chip">☉ Sun</span><span class="chip">♄ Saturn</span><span class="chip">♀ Venus</span><span class="chip">♃ Jupiter</span><span class="chip">☉ ⚹ ♄ Sun–Saturn</span><span class="chip">⌂ Casa 6</span><span class="chip">⌂ Casa 8</span>
+  <div class="body"><p>O eixo que vai da Casa 8 (onde está seu Sol em Capricórnio) à Casa 6 (onde está Saturno em Escorpião) revela uma pessoa cujo crescimento passa necessariamente pela profundidade e pela transformação. Você não é do tipo que evolui na superfície ou que atravessa a vida sem mergulhos. Sua alma pede intensidade, e você tende a passar por ciclos de morte simbólica e renascimento — fases em que algo importante acaba para que outra coisa possa nascer. Isso pode ser desconfortável, até assustador, mas é justamente onde reside sua maior força: a capacidade de se reconstruir depois de crises que abateriam muita gente.</p><div class="sep" aria-hidden="true">☉ ⚹ ♄</div><p>O Sol na Casa 8 lida com tudo o que é compartilhado e profundo: intimidade real, recursos do outro, heranças, dívidas, sexualidade, poder e as grandes transformações da vida. Você aprende sobre si mesma através dessas experiências limite, e amadurece cada vez que atravessa uma delas com consciência. O desafio, como já vimos, é o controle: a tendência a querer segurar tudo, a desconfiar, a não se entregar por medo de ser ferida ou de perder o comando. Crescer, para você, é aprender a soltar — a confiar em processos que você não controla, a aceitar ajuda, a permitir que outras pessoas cuidem de você. Cada vez que você faz isso, um pedaço da couraça capricorniana cede e você fica mais leve e mais forte ao mesmo tempo.</p><div class="sep" aria-hidden="true">☉ · ♄ · ♀</div><p>Esse caminho de transformação encontra apoio na sua natureza sagitariana — Vênus e Júpiter em Sagitário apontam uma busca por sentido, por filosofia de vida, por algo maior que dê significado às experiências duras. Quando você atribui propósito ao que vive, mesmo o sofrimento vira material de crescimento. Sagitário é o otimismo que sobrevive às crises, a fé de que existe um horizonte adiante mesmo quando o chão treme. Cultivar essa dimensão — seja através de estudo, viagens, espiritualidade, filosofia ou simplesmente de uma visão ampla da vida — é fundamental para você não afundar na intensidade escorpiana e capricorniana. É o contrapeso luminoso do seu mapa.</p><div class="sep" aria-hidden="true">🌱</div><p>Saturno em Escorpião na Casa 6 acrescenta que boa parte do seu crescimento acontece no cotidiano, no trabalho paciente sobre si mesma, na disciplina de encarar seus próprios processos internos sem fugir. Não é uma transformação romântica e súbita; é lenta, corporal, feita de constância. Você amadurece enfrentando aos poucos o que teme, construindo hábitos que sustentam sua saúde física e emocional, e transformando o medo em domínio. Cada pequena vitória sobre a evitação te fortalece.</p><div class="sep" aria-hidden="true">☉ ⚹ ♄</div><p>Lidar bem com essa dimensão do mapa é aceitar que você é uma pessoa de profundidades, e parar de tentar ser leve o tempo todo só para agradar ou para se proteger. Sua intensidade não é um defeito; é sua matéria-prima. O trabalho é não deixar que ela vire controle, obsessão ou amargura, e sim canalizá-la para regeneração — sua e dos outros. Você tem um potencial real de ser aquela pessoa que ajuda os demais a atravessarem suas próprias crises, justamente porque já atravessou as suas. Quando você une a profundidade escorpiana, a solidez capricorniana e a fé sagitariana, torna-se alguém capaz não só de sobreviver às tempestades, mas de encontrar sentido nelas — e isso é, talvez, o maior presente do seu mapa.</p></div>
+  <div class="nav"><button class="btn" type="button" onclick="show('tensoes-centrais',true)">‹ anterior</button></div>
+</article>
+<article class="detail" id="d-dados">
+  <div class="top">
+    <h3><span class="ics"><span class="ic general">📋</span></span>Dados do mapa</h3>
+    <button class="btn" type="button" onclick="back()">‹ Voltar</button>
+  </div>
+  <table class="data">
+      <tr><td>Location</td><td>Belo Horizonte, Brazil (lat -19.9227, lon -43.9451)</td></tr>
+      <tr><td>Local time</td><td>1984-01-10 16:00:00 (America/Sao_Paulo)</td></tr>
+      <tr><td>UTC time</td><td>1984-01-10 19:00:00+00:00</td></tr>
+      <tr><td>Ascendant</td><td>Gemini 73.4°</td></tr>
+      <tr><td>Sun</td><td>Capricorn 289.7° (House8)</td></tr>
+      <tr><td>Moon</td><td>Aries 12.9° (House10)</td></tr>
+      <tr><td>Mercury</td><td>Capricorn 270.4° (House7)</td></tr>
+      <tr><td>Venus</td><td>Sagittarius 251.7° (House7)</td></tr>
+      <tr><td>Mars</td><td>Libra 209.8° (House5)</td></tr>
+      <tr><td>Jupiter</td><td>Sagittarius 268.1° (House7)</td></tr>
+      <tr><td>Saturn</td><td>Scorpio 224.7° (House6)</td></tr>
+      <tr><td>Aspects</td><td>Sun square Moon, Sun sextile Saturn, Moon trine Venus, Mercury sextile Mars, Mercury conjunction Jupiter, Mars sextile Jupiter</td></tr>
+      <tr><td>Angular planets</td><td>Moon, Mercury, Venus, Jupiter</td></tr>
+  </table>
+</article>
+  </section>
+</div>
+<div class="pagesep foot" aria-hidden="true">☉ ☽ ☿ ♀ ♂ ♃ ♄</div>
+<footer>Gerado por Birth Chart — Utility Hub</footer>
+</main>
+<script>
+function nav(id,replace){
+  // iOS Safari throws SecurityError on history.* from a file:// document —
+  // don't let it abort the scroll or the open/close it follows.
+  try{replace?history.replaceState({v:id},''):history.pushState({v:id},'');}catch(e){}
+}
+function show(id,replace){
+  document.getElementById('tiles').style.display='none';
+  document.body.classList.remove('wheel-open');
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.getElementById('d-'+id).classList.add('open');
+  nav(id,replace);
+  window.scrollTo(0,0);
+}
+function showWheel(){
+  document.getElementById('tiles').style.display='none';
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.add('wheel-open');
+  nav('wheel',false);
+  window.scrollTo(0,0);
+}
+function back(){
+  document.querySelectorAll('.detail').forEach(d=>d.classList.remove('open'));
+  document.body.classList.remove('wheel-open');
+  document.getElementById('tiles').style.display='';
+}
+window.addEventListener('popstate',()=>back());
+document.addEventListener('keydown',e=>{if(e.key==='Escape')back();});
+</script>
+</body>
+</html>
